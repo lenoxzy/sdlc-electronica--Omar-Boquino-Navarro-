@@ -6,7 +6,7 @@
 
 ## Semana 1 -objetivo de la semana ➡️ Mapear conceptos, Escribir Python idiomatico, Aplicar los 5 principios de SOLID, Practicar el flujo profesional de git y Arrancar con la bitacora de IA 🗃️  -
 
-### Día 1: Lunes 
+### Día 1: Lunes 🟡
 **Entrada 1**
 
 ** Prompt utilizado:**
@@ -25,12 +25,53 @@ def celsius_to_fahrenheit(r: Reading) -> Reading:
 def check_threshold(r: Reading, max_limit: float) -> bool:
     # Código descartado
     pass
+```
+### Día 2: Martes 🔴 
+**Entrada 2**
+** Prompt utilizado:**
+"quiero que el estado inicial inicie con el color rojo y que lo pueda probar con pytest"
+**📝 Notas de la sesión:**
+Como en el caso anterior antes de realizar algun pedido a la IA, necesita una guia para poder basarse para relizar de la mejor manera el prompt.
+Asi que de nuevo le mande el codigo que fue proporcionado en el curso y revisando el codigo me percate que el codigo proporcionado por la IA era correcto ya que realizaba lo solicitado por la actividad del dia MARTES.
+Solo fue cuestion de cambiar algunas palabras para un mejor entendimiento del codigo y realizar algunas busquedas por internet ya que algunos conceptos del mismo codigo no llegue a entender bien. 
 
+** Líneas de código anexadas:**
+```python
+def estado_inicial_rojo():
+    """ la instruccion assert ayuda a validar la prueba""" 
+    """Valida que si no se pasa argumento, el semáforo inicie en ROJO."""
+    semaforo = TrafficLightFSM()
+    assert semaforo.state == TrafficLightState.RED
+    assert semaforo._cycle_count == 0
 
+def test_transiciones_de_estado():
+    """Valida que el ciclo fluya correctamente: ROJO -> VERDE -> AMARILLO -> ROJO."""
+    semaforo = TrafficLightFSM()
+    
+    # 1. De Rojo a Verde
+    cambio = semaforo.transition()
+    assert cambio == TrafficLightState.GREEN
+    assert semaforo.state == TrafficLightState.GREEN
+    
+    # 2. De Verde a Amarillo
+    cambio = semaforo.transition()
+    assert cambio == TrafficLightState.YELLOW
+    assert semaforo.state == TrafficLightState.YELLOW
+    
+    # 3. De Amarillo a Rojo (Ciclo completo)
+    cambio = semaforo.transition()
+    assert cambio == TrafficLightState.RED
+    assert semaforo.state == TrafficLightState.RED
 
-
-
-
+def test_conteo_de_ciclos():
+    """Valida que el contador de ciclos incremente en cada transición."""
+    semaforo = TrafficLightFSM()
+    
+    semaforo.transition() # +1
+    semaforo.transition() # +1
+    
+    assert semaforo._cycle_count == 2
+```
 
 
 
