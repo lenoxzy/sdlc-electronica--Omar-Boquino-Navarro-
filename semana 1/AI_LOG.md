@@ -24,7 +24,7 @@ def check_threshold(r: Reading, max_limit: float) -> bool:
     # Código descartado
     pass
 ```
-### Día 2: Martes 
+## Día 2: -Martes - 
 **Entrada 2**
 ** Prompt utilizado:**
 "quiero que el estado inicial inicie con el color rojo y que lo pueda probar con pytest"
@@ -70,8 +70,24 @@ def test_conteo_de_ciclos():
     
     assert semaforo._cycle_count == 2
 ```
+## Día 3: -Miercoles - 
+**Entrada 3**
+** Prompt utilizado:**
+Antes de realizar algun prompt realice preguntas respecto al tema SOLID (que es, para que me sirve y ejemoplos con y sin SOLID ).
+Despues de eso mande el codigo proporcionado por el curso para que la IA tuviera una referencia para los prompt. 
+despues le coloque este prompt "Implementa los tres primeros principios con el dominio de sensores", asi otorgandome 3 codigos separados siendo los 3 primeros principios de SOLID (S,O,L).
+**📝 Notas de la sesión:**
+revisando los codigos otorgados por la IA, me parecieron correctos asi que me dispuse a unirlos en un mismo codigo grande para mejor comodidad para correrlo y testearlo en mi PC.
+una vez viendo que los codigos funcionaban bien, tome de referencia esos codigos y los codigos de ejemplo que me habia dado con anterioridad para realizar la version sin parametros SOLID .
+Ya teniendo ambos codigos le mande los codigos a la IA para anexar el pytest otorgandome los codigos que estan anexados en la carpeta MIERCOLES.
 
 
+
+
+
+
+## Día 4: -jueves - 
+**Entrada 4**
 
 
 
