@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from __future__ import annotations
+
 @dataclass
 class SensorReading:
     sensor_id: str
