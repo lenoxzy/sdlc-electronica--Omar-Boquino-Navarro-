@@ -3,7 +3,7 @@
 #     manana NO toca el codigo existente.
 # L - TemperatureSensor y HumiditySensor son intercambiables donde se espera
 #     BaseSensor: process_sensor(sensor: BaseSensor) funciona con cualquiera.
- 
+from __future__ import annotations 
 class AlertStrategy(ABC):
     @abstractmethod
     def send(self, message: str) -> None: ...
