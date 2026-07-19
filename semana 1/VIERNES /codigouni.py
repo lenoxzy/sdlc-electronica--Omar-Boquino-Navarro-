@@ -4,6 +4,7 @@ from collections import deque
 import json
 import logging
 from datetime import datetime, timezone
+from typing import Protocol
 @dataclass(frozen=True)
 class SensorReading:
     """
@@ -15,8 +16,6 @@ class SensorReading:
     # Si la trama de tu sensor UART envía más datos (ej. timestamp, unidad),
     # se agregarían aquí.
 ################################################
-from typing import Protocol
-import json
 # Asumimos que SensorReading está importado desde tu archivo de modelos
 # from models import SensorReading 
 
@@ -116,7 +115,6 @@ class JSONLoggingRecorderWrapper:
         
 
 ##########################################################################
-from typing import Protocol
 # from models import SensorReading (nuestro modelo inmutable)
 
 # 1. El Contrato (ISP y DIP)
@@ -153,7 +151,6 @@ class CSVRecorder:
         with open(self._filepath, "a") as f:
             f.write(f"{reading.sensor_id},{reading.value}\n")
 #####################################################
-from typing import Protocol
 
 # 1. El Contrato (ISP y DIP)
 class UARTDevice(Protocol):
