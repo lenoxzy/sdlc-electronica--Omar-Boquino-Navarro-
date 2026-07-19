@@ -80,7 +80,7 @@ analizar_medicion(sensor_temp, 20.0)
 
 # Uso INcorrecto (Falla por violar LSP):
 sensor_puerta = DoorSensor("DOOR-01")
-from abc import ABC, abstractmethod
+
 
 class BaseSensor(ABC):
     def __init__(self, sensor_id: str):
