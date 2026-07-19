@@ -1,6 +1,6 @@
 import pytest
 # 2. Importas las herramientas simuladas desde codigouni.py
-from codigouni import MockUARTDevice, JSONUARTParser, InMemoryRecorder, UARTDevice, DataParser, DataRecorder, SensorReading, UARTDevice,CANParser, ThreadSafeCircularRecorder, JSONLoggingRecorderWrapper 
+from semana1.codigouni import MockUARTDevice, JSONUARTParser, InMemoryRecorder, UARTDevice, DataParser, DataRecorder, SensorReading, UARTDevice,CANParser, ThreadSafeCircularRecorder, JSONLoggingRecorderWrapper 
 
 from dataclasses import dataclass, FrozenInstanceError
 import json
