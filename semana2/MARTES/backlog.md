@@ -21,7 +21,7 @@ para registrar una alerta y evitar que las plantas se deshidraten o desarrollen 
  Given que el umbral de humedad del sensor está configurado con un mínimo de 60% y un máximo de 80%
  When ingrese una lectura de humedad de exactamente 80.1%
  Then el sistema debe marcar la lectura como anómala
-And disparar un evento tipo "Alerta Humedad Alta"
+ And disparar un evento tipo "Alerta Humedad Alta"
  Given que el umbral de humedad está configurado con los mismos parámetros
  When ingrese una lectura de humedad de exactamente 59.9%# Then el sistema debe marcar la lectura como anómala
  And disparar un evento tipo "Alerta Humedad Baja"
