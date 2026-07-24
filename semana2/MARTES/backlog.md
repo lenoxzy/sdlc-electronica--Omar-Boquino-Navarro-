@@ -14,7 +14,7 @@
  Prioridad: Must have 
 
 # Deteccion de Anomalias de humedad
-## como dueño de un centro de viveros,quiero que el sistema monitoree y detecte si la humedad ambiental se mantenga entre (60% al 80%),
+como dueño de un centro de viveros,quiero que el sistema monitoree y detecte si la humedad ambiental se mantenga entre (60% al 80%),
 para registrar una alerta y evitar que las plantas se deshidraten o desarrollen hongos.
 
 ## Criterios (Gherkin)
@@ -27,3 +27,18 @@ para registrar una alerta y evitar que las plantas se deshidraten o desarrollen 
  And disparar un evento tipo "Alerta Humedad Baja"
  Estimación: 3 Story Points
  Prioridad: Must Have
+ 
+# Manejo de Errores en la Ingesta de Datos
+Como administrador del sistema de monitoreo,quiero que la API valide y rechace cualquier lectura malformada o incompleta enviada por los sensores,
+para evitar que datos corruptos contaminen la base de datos y generen falsas alarmas.
+
+## criterios de Aceptación (Gherkin):
+
+Given que un sensor intenta enviar una nueva lectura a la API.
+When el paquete de datos JSON recibido no contiene el campo "temperatura" o está vacío.
+Then el sistema debe rechazar la petición.
+And responder con un código de estado HTTP 400 (Bad Request).
+Given que un sensor intenta enviar una nueva lectura a la API.
+When el paquete de datos JSON contiene texto en lugar de números (ej. "temperatura": "veinte").
+Then el sistema debe rechazar la petición.
+And responder con un código de estado HTTP 400 (Bad Request).
