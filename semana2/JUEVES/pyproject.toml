@@ -1,1 +1,17 @@
+# pyproject.toml
 
+[tool.ruff.lint]
+# E: Errores de estilo (PEP 8)
+# F: Pyflakes (Errores lógicos como variables no usadas)
+# I: isort (Ordena las importaciones alfabéticamente)
+# UP: pyupgrade (Te obliga a usar sintaxis moderna de Python)
+# B: flake8-bugbear (Encuentra posibles bugs y trampas lógicas)
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+# Ejecuta coverage en la carpeta actual y falla si es menor al 80%
+addopts = "--cov=. --cov-fail-under=80"
+
+[tool.mypy]
+# Prohíbe crear funciones o métodos sin Type Hints (tipado estático)
+disallow_untyped_defs = true
