@@ -1,5 +1,6 @@
 import pytest
-# Todavía no importamos nada porque no existe
+from registry import SensorRegistry, SensorNotFoundError
+
 
 def test_get_unknown_sensor_raises():
     registry = SensorRegistry()
