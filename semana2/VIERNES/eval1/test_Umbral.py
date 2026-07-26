@@ -1,8 +1,40 @@
-# Test US-02: Umbral de Temperatura
-def test_anomaly_detector_temp_exceeds_threshold():
-    mock_alert = MockAlert()
-    # Inyectamos el umbral (NO hardcodeado) y la estrategia de alerta
-    detector = AnomalyDetector(alert_strategy=mock_alert, temp_threshold=35.0, hum_threshold=80.0)
-    reading = SensorReading("S1", 36.0, "temperature")
+import pytest
+from US_01 import SensorReading
+from Umbral import AnomalyDetector, AlertStrategy
 
-    detector.check(reading)
+# 1. Creamos un "Mock" (Simulador) de alerta para que la prueba no imprima en consola real
+class MockAlert:
+    def __init__(self):
+        self.messages = []
+        
+    def send_alert(self, message: str) -> None:
+        self.messages.append(message)
+
+# Test 1: Entra al 'if' de Temperatura
+def test_detector_temperatura_critica():
+    mock = MockAlert()
+    detector = AnomalyDetector(mock, temp_threshold=35.0, hum_threshold=80.0)
+    lectura = SensorReading("T1", 40.0, "temperature")
+    
+    detector.check(lectura)
+    assert len(mock.messages) == 1
+    assert "CRITICAL TEMP" in mock.messages[0]
+
+# Test 2: Entra al 'elif' de Humedad
+def test_detector_humedad_critica():
+    mock = MockAlert()
+    detector = AnomalyDetector(mock, temp_threshold=35.0, hum_threshold=80.0)
+    lectura = SensorReading("H1", 85.0, "humidity")
+    
+    detector.check(lectura)
+    assert len(mock.messages) == 1
+    assert "CRITICAL HUM" in mock.messages[0]
+
+# Test 3: No entra a ninguno (Valores normales)
+def test_detector_valores_normales():
+    mock = MockAlert()
+    detector = AnomalyDetector(mock, temp_threshold=35.0, hum_threshold=80.0)
+    lectura = SensorReading("T1", 20.0, "temperature")
+    
+    detector.check(lectura)
+    assert len(mock.messages) == 0 # La lista debe estar vacía porque no hubo alerta
