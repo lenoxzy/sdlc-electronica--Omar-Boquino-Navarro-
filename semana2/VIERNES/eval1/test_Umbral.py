@@ -37,4 +37,4 @@ def test_detector_valores_normales():
     lectura = SensorReading("T1", 20.0, "temperature")
     
     detector.check(lectura)
-    assert len(mock.messages) == 0 # La lista debe estar vacía porque no hubo alerta
+    assert len(mock.messages) == 0 # La lista debe estar vacía porque no hubo alerta 
