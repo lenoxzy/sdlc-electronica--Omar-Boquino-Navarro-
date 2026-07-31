@@ -15,3 +15,6 @@ addopts = "--cov=. --cov-fail-under=80"
 [tool.mypy]
 # Prohíbe crear funciones o métodos sin Type Hints (tipado estático)
 disallow_untyped_defs = true
+
+[tool.fastapi]
+entrypoint = "app.main:app"
