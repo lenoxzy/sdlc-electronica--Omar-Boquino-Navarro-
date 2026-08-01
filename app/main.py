@@ -36,6 +36,9 @@ def get_service(db: Session = Depends(get_db)):
     return ReadingService(repo=repo)
 
 # --- 3. ENDPOINTS (Respetando la tabla REST) ---
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "ok", "db": "connected"}
 
 @app.get("/sensors/{id}/readings", response_model=List[ReadingOut], status_code=200)
 def list_readings(
