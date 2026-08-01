@@ -1,6 +1,10 @@
-from dataclasses import dataclass
 from typing import Protocol
-from US_01 import SensorReading 
+
+from US_01 import (
+    SensorReading,  # Asegúrate de que tu archivo se llame us_01.py en minúsculas
+)
+
+
 # Definimos el contrato de la alerta (Inversión de Dependencias)
 class AlertStrategy(Protocol):
     def send_alert(self, message: str) -> None:

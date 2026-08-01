@@ -1,5 +1,7 @@
 import random
+
 from US_01 import SensorReading  # Ajusta el nombre si tu archivo es distinto
+
 
 class SensorSimulator:
     """Simula hardware real generando datos con ruido gaussiano (campana de Gauss)."""

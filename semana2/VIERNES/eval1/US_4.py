@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-from Umbral import  AlertStrategy
 # --- Implementaciones Concretas de la Alerta ---
 class ConsoleAlert:
     def send_alert(self, message: str) -> None:

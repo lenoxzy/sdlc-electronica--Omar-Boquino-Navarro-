@@ -1,6 +1,8 @@
-import pytest
 from simulator import SensorSimulator
-from Umbral import AnomalyDetector  # Ajusta si tu archivo de umbrales se llama diferente
+from Umbral import (
+    AnomalyDetector,  # Ajusta si tu archivo de umbrales se llama diferente
+)
+
 
 class IntegrationAlertMock:
     """Mock especializado para contar la ráfaga de alertas del test de integración"""

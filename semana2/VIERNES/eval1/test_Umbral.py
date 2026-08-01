@@ -1,6 +1,6 @@
-import pytest
+from Umbral import AnomalyDetector
 from US_01 import SensorReading
-from Umbral import AnomalyDetector, AlertStrategy
+
 
 # 1. Creamos un "Mock" (Simulador) de alerta para que la prueba no imprima en consola real
 class MockAlert:

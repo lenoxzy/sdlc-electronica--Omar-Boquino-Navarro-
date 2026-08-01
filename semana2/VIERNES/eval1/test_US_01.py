@@ -1,5 +1,5 @@
-import pytest
 from US_01 import SensorReading
+
 
 # Test US-01: Ingesta de datos
 def test_sensor_reading_creation():
