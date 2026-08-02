@@ -8,8 +8,8 @@ class SQLAlchemySensorRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def list_sensors(self) -> list[Sensor]:
-        return self.db.query(Sensor).all()
+    def list_sensors(self, skip: int = 0, limit: int = 100) -> list[Sensor]:
+        return self.db.query(Sensor).offset(skip).limit(limit).all()
 
     def get_sensor(self, sensor_id: int) -> Sensor | None:
         return self.db.query(Sensor).filter(Sensor.id == sensor_id).first()

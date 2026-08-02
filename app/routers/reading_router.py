@@ -5,11 +5,11 @@ from app.db import SessionLocal
 from app.repositories.reading_repo import SQLAlchemyReadingRepository
 from app.schemas.reading_schema import ReadingCreate, ReadingOut
 from app.services.reading_service import ReadingService
-
+from typing import Generator, Any
 router = APIRouter()
 
 
-def get_db():
+def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
     try:
         yield db
@@ -17,7 +17,7 @@ def get_db():
         db.close()
 
 
-def get_service(db: Session = Depends(get_db)): # noqa: B008
+def get_service(db: Session = Depends(get_db)) -> ReadingService: # noqa: B008 
     repo = SQLAlchemyReadingRepository(db)
     return ReadingService(repo=repo)
 
@@ -30,8 +30,8 @@ def list_readings(
     from_date: str | None = Query(None, alias="from"),
     to_date: str | None = Query(None, alias="to"),
     service: ReadingService = Depends(get_service),# noqa: B008
-):
-    # ✅ FIX: usar service.list() en lugar de service._repo directamente
+) -> list[Any]: 
+    
     # así el mock de get_service sí intercepta la llamada
     readings = service._repo.list_for_sensor(sensor_id=str(id))
     return readings
@@ -42,7 +42,7 @@ def create_reading(
     id: int,
     reading: ReadingCreate,
     service: ReadingService = Depends(get_service),# noqa: B008
-):
+) -> Any: 
     try:
         new_record = service.record(
             sensor_id=str(id), value=reading.value, unit=reading.unit
@@ -55,15 +55,15 @@ def create_reading(
 
 
 @router.get("/readings/{id}", response_model=ReadingOut, status_code=200)
-def get_reading(id: int):
+def get_reading(id: int) -> dict[str, Any]: 
     return {"id": id, "value": 25.0, "unit": "C"}
 
 
 @router.patch("/readings/{id}", response_model=ReadingOut, status_code=200)
-def update_reading(id: int):
+def update_reading(id: int) -> dict[str, Any]: 
     return {"id": id, "value": 26.0, "unit": "C"}
 
 
 @router.delete("/readings/{id}", status_code=204)
-def delete_reading(id: int):
+def delete_reading(id: int) -> None: 
     return None

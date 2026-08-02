@@ -8,11 +8,10 @@ from bad_sensor_system import (
     analizar_medicion,
 )
 
-
 # ==========================================
 # Pruebas para violación SRP (Responsabilidad Única)
 # ==========================================
-def test_sensor_reader_hace_demasiado(capsys):
+def test_sensor_reader_hace_demasiado(capsys: pytest.CaptureFixture[str]) -> None:
     """
     Prueba que SensorReader viola SRP al encargarse tanto de leer
     como de guardar en la base de datos.
@@ -33,7 +32,7 @@ def test_sensor_reader_hace_demasiado(capsys):
 # ==========================================
 # Pruebas para violación OCP (Abierto/Cerrado)
 # ==========================================
-def test_anomaly_detector_hardcoded_alerts(capsys):
+def test_anomaly_detector_hardcoded_alerts(capsys: pytest.CaptureFixture[str]) -> None:
     """
     Prueba que AnomalyDetector usa condicionales rígidos (if/elif)
     y funciona para los casos programados.
@@ -45,7 +44,7 @@ def test_anomaly_detector_hardcoded_alerts(capsys):
     assert "[ALERTA CONSOLA]: Anomalía detectada" in captured.out
 
 
-def test_anomaly_detector_no_soportado(capsys):
+def test_anomaly_detector_no_soportado(capsys: pytest.CaptureFixture[str]) -> None:
     """
     Prueba la limitación del OCP: Si le pasamos un tipo de alerta
     nuevo ('sms') que no está en sus 'if/elif', el sistema falla silenciosamente.
@@ -61,7 +60,7 @@ def test_anomaly_detector_no_soportado(capsys):
 # ==========================================
 # Pruebas para violación LSP (Sustitución de Liskov)
 # ==========================================
-def test_liskov_uso_correcto(capsys):
+def test_liskov_uso_correcto(capsys: pytest.CaptureFixture[str]) -> None:
     """
     Prueba que el código cliente funciona con la clase hija esperada.
     """
@@ -72,9 +71,9 @@ def test_liskov_uso_correcto(capsys):
     assert "¡Alerta! El valor 25.5 superó el umbral de 20.0" in captured.out
 
 
-def test_liskov_violacion_rompe_el_programa():
+def test_liskov_violacion_rompe_el_programa() -> None:
     """
-    Prueba que al pasar una clase hija que viola Liskov ,
+    Prueba que al pasar una clase hija que viola Liskov,
     el programa cliente colapsa con un TypeError al intentar hacer
     """
     sensor_puerta = DoorSensor("DOOR-BAD")

@@ -26,7 +26,7 @@ class ReadingRepository(Protocol):
 class SQLAlchemyReadingRepository:
     """Implementación real del repositorio usando SQLAlchemy."""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: Session) -> None: 
         self.db = db
 
     def add(self, sensor_id: str, value: float, unit: str) -> ReadingModel:
@@ -42,10 +42,10 @@ class SQLAlchemyReadingRepository:
         self.db.refresh(new_reading)
 
         return ReadingModel(
-            id=new_reading.id,
+            id=int(new_reading.id),
             sensor_id=str(new_reading.sensor_id),
-            value=new_reading.value,
-            unit=new_reading.unit,
+            value=float(new_reading.value),
+            unit=str(new_reading.unit),
         )
 
     def list_for_sensor(self, sensor_id: str) -> list[ReadingModel]:
@@ -53,7 +53,7 @@ class SQLAlchemyReadingRepository:
         readings = self.db.scalars(stmt).all()
         return [
             ReadingModel(
-                id=r.id, sensor_id=str(r.sensor_id), value=r.value, unit=r.unit
+                id=int(r.id), sensor_id=str(r.sensor_id), value=float(r.value), unit=str(r.unit)
             )
             for r in readings
         ]

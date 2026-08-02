@@ -1,8 +1,9 @@
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool  # <--- NUEVO IMPORT
+from typing import Generator
 
 from app.db import Base
 from app.main import app
@@ -19,7 +20,7 @@ engine = create_engine(
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-def override_get_db():
+def override_get_db() -> Generator[Session, None, None]:
     db = TestingSessionLocal()
     try:
         yield db
@@ -34,7 +35,7 @@ client = TestClient(app)
 
 # 3. Fixture de base de datos
 @pytest.fixture(autouse=True)
-def setup_database():
+def setup_database() -> Generator[None, None, None]:
     Base.metadata.create_all(bind=engine)
 
     db = TestingSessionLocal()
@@ -48,25 +49,22 @@ def setup_database():
 
     Base.metadata.drop_all(bind=engine)
 
-
-# ... DEJA TUS PRUEBAS ABAJO EXACTAMENTE COMO ESTÁN ...
 # --- 4. LAS PRUEBAS ---
 
-
-def test_health_check():
+def test_health_check() -> None:
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok", "db": "connected"}
 
 
-def test_list_readings_empty():
+def test_list_readings_empty() -> None:
     # Como la BD en RAM siempre está nueva, debe regresar lista vacía
     response = client.get("/sensors/1/readings")
     assert response.status_code == 200
     assert response.json() == []
 
 
-def test_create_reading_success():
+def test_create_reading_success() -> None:
     # Creamos un registro real en la BD en RAM
     response = client.post("/sensors/1/readings", json={"value": 28.0, "unit": "C"})
     assert response.status_code == 201
@@ -74,13 +72,13 @@ def test_create_reading_success():
     assert response.json()["value"] == 28.0
 
 
-def test_create_reading_fails_absolute_zero():
+def test_create_reading_fails_absolute_zero() -> None:
     # Tu nuevo y poderoso Pydantic V2 ataja este error
     response = client.post("/sensors/1/readings", json={"value": -300.0, "unit": "C"})
     assert response.status_code == 422
     assert "cero absoluto" in str(response.json()["detail"])
 
 
-def test_create_reading_sensor_not_found():
+def test_create_reading_sensor_not_found() -> None:
     response = client.post("/sensors/999/readings", json={"value": 25.0, "unit": "C"})
     assert response.status_code == 404

@@ -6,7 +6,7 @@ from app.services.reading_service import ReadingService
 
 # 1. El Repositorio Fake (en memoria)
 class FakeReadingRepository:
-    def __init__(self):
+    def __init__(self) -> None:
         self.readings: list[ReadingModel] = []
         self._current_id = 1
 
@@ -23,7 +23,7 @@ class FakeReadingRepository:
 
 
 # 2. Los Tests
-def test_record_successful():
+def test_record_successful() -> None:
     """Prueba que una lectura válida se guarda correctamente a través del servicio."""
     # Arrange (Preparar)
     fake_repo = FakeReadingRepository()
@@ -38,7 +38,7 @@ def test_record_successful():
     assert len(fake_repo.readings) == 1
 
 
-def test_record_fails_below_absolute_zero():
+def test_record_fails_below_absolute_zero() -> None:
     """no se permiten temperaturas menores al cero absoluto."""
     # Arrange
     fake_repo = FakeReadingRepository()

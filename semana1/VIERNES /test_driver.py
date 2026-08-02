@@ -1,6 +1,6 @@
 import json
 from dataclasses import FrozenInstanceError, dataclass
-
+import pathlib 
 import pytest
 
 # 2. Importas las herramientas simuladas desde codigouni.py
