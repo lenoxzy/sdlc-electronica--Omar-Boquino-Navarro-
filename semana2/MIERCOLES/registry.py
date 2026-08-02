@@ -1,7 +1,8 @@
-
 class SensorNotFoundError(Exception):
     pass
-# diccionario para guardar los sensores 
+
+
+# diccionario para guardar los sensores
 class SensorRegistry:
     def __init__(self):
         self._sensors = {}

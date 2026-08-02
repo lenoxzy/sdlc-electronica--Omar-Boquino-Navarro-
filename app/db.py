@@ -1,6 +1,7 @@
 from pathlib import Path
+
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 # 1. Calculamos la ruta raíz de tu proyecto dinámicamente
 # __file__ es db.py, .parent es app/, .parent.parent es tu carpeta raíz
@@ -14,6 +15,7 @@ engine = create_engine(
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 
 class Base(DeclarativeBase):
     pass

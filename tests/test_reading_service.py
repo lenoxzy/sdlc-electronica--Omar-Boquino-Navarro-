@@ -1,6 +1,8 @@
 import pytest
+
 from app.repositories.reading_repo import ReadingModel
 from app.services.reading_service import ReadingService
+
 
 # 1. El Repositorio Fake (en memoria)
 class FakeReadingRepository:
@@ -10,10 +12,7 @@ class FakeReadingRepository:
 
     def add(self, sensor_id: str, value: float, unit: str) -> ReadingModel:
         reading = ReadingModel(
-            id=self._current_id, 
-            sensor_id=sensor_id, 
-            value=value, 
-            unit=unit
+            id=self._current_id, sensor_id=sensor_id, value=value, unit=unit
         )
         self.readings.append(reading)
         self._current_id += 1
@@ -21,6 +20,7 @@ class FakeReadingRepository:
 
     def list_for_sensor(self, sensor_id: str) -> list[ReadingModel]:
         return [r for r in self.readings if r.sensor_id == sensor_id]
+
 
 # 2. Los Tests
 def test_record_successful():
@@ -37,8 +37,9 @@ def test_record_successful():
     assert result.sensor_id == "TEMP-01"
     assert len(fake_repo.readings) == 1
 
+
 def test_record_fails_below_absolute_zero():
-    """Prueba la regla de negocio: no se permiten temperaturas menores al cero absoluto."""
+    """no se permiten temperaturas menores al cero absoluto."""
     # Arrange
     fake_repo = FakeReadingRepository()
     service = ReadingService(repo=fake_repo)
@@ -46,6 +47,6 @@ def test_record_fails_below_absolute_zero():
     # Act & Assert
     with pytest.raises(ValueError, match="Temperatura por debajo del cero absoluto"):
         service.record(sensor_id="TEMP-01", value=-274.0, unit="C")
-    
-    # Verificamos que el repositorio falso quedó vacío (la transacción se detuvo a tiempo)
+
+    # Verificamos que el repositorio falso quedó vacío 
     assert len(fake_repo.readings) == 0

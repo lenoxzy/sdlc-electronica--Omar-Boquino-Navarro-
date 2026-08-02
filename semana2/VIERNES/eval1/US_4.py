@@ -3,6 +3,7 @@ class ConsoleAlert:
     def send_alert(self, message: str) -> None:
         print(f"[CONSOLE ALERT] {message}")
 
+
 class FileAlert:
     def __init__(self, filepath: str):
         self._filepath = filepath

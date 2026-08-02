@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -8,6 +7,7 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class SensorReading:
     """Almacena la lectura del hardware de forma inmutable."""
+
     sensor_id: str
     value: float
     reading_type: str  # 'temperature' o 'humidity'

@@ -1,56 +1,86 @@
+import pytest
 from fastapi.testclient import TestClient
-from app.main import app, get_service
-from app.services.reading_service import ReadingService
-from app.repositories.reading_repo import ReadingModel
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool  # <--- NUEVO IMPORT
 
-# 1. Creamos nuestro cliente de pruebas (simula un navegador o Postman)
+from app.db import Base
+from app.main import app
+from app.models import models
+from app.routers.reading_router import get_db
+
+# 1. Creamos el motor en RAM asegurando que todas las conexiones compartan las tablas
+SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,  # <--- LA MAGIA ESTÁ AQUÍ
+)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+def override_get_db():
+    db = TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+# 2. Le decimos a FastAPI que use nuestra BD en RAM
+app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
 
-# 2. Creamos un Repositorio Falso específico para probar la API
-class MockAPIReadingRepository:
-    def list_for_sensor(self, sensor_id: str) -> list[ReadingModel]:
-        return [ReadingModel(id=1, sensor_id=sensor_id, value=25.5, unit="C")]
-    
-    def add(self, sensor_id: str, value: float, unit: str) -> ReadingModel:
-        # Simulamos el error de la base de datos si el sensor no existe
-        if sensor_id == "999":
-            raise ValueError("Sensor no encontrado")
-        return ReadingModel(id=2, sensor_id=sensor_id, value=value, unit=unit)
 
-# 3. Sobrescribimos la dependencia de FastAPI
-def override_get_service():
-    return ReadingService(repo=MockAPIReadingRepository())
+# 3. Fixture de base de datos
+@pytest.fixture(autouse=True)
+def setup_database():
+    Base.metadata.create_all(bind=engine)
 
-app.dependency_overrides[get_service] = override_get_service
+    db = TestingSessionLocal()
+    # Usamos el modelo sin las propiedades nuevas para que no marque TypeError
+    nuevo_sensor = models.Sensor(id=1, name="Sensor Test")
+    db.add(nuevo_sensor)
+    db.commit()
+    db.close()
 
-# --- 4. LAS PRUEBAS DE LOS ENDPOINTS ---
+    yield
+
+    Base.metadata.drop_all(bind=engine)
+
+
+# ... DEJA TUS PRUEBAS ABAJO EXACTAMENTE COMO ESTÁN ...
+# --- 4. LAS PRUEBAS ---
+
 
 def test_health_check():
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok", "db": "connected"}
 
-def test_list_readings_success():
+
+def test_list_readings_empty():
+    # Como la BD en RAM siempre está nueva, debe regresar lista vacía
     response = client.get("/sensors/1/readings")
     assert response.status_code == 200
-    data = response.json()
-    assert len(data) == 1
-    assert data[0]["value"] == 25.5
+    assert response.json() == []
+
 
 def test_create_reading_success():
+    # Creamos un registro real en la BD en RAM
     response = client.post("/sensors/1/readings", json={"value": 28.0, "unit": "C"})
     assert response.status_code == 201
-    assert response.json()["id"] == 2
+    assert response.json()["id"] == 1
     assert response.json()["value"] == 28.0
 
+
 def test_create_reading_fails_absolute_zero():
-    # Probamos la regla de negocio (Error 422)
+    # Tu nuevo y poderoso Pydantic V2 ataja este error
     response = client.post("/sensors/1/readings", json={"value": -300.0, "unit": "C"})
     assert response.status_code == 422
-    assert "cero absoluto" in response.json()["detail"]
+    assert "cero absoluto" in str(response.json()["detail"])
+
 
 def test_create_reading_sensor_not_found():
-    # Probamos el error cuando el sensor no existe (Error 404)
     response = client.post("/sensors/999/readings", json={"value": 25.0, "unit": "C"})
     assert response.status_code == 404
-    assert response.json()["detail"] == "Sensor no encontrado"

@@ -1,7 +1,9 @@
-from app.repositories.reading_repo import ReadingRepository, ReadingModel
+from app.repositories.reading_repo import ReadingModel, ReadingRepository
+
 
 class ReadingService:
     """Lógica de negocio. Depende de la abstracción del repositorio (DIP)."""
+
     def __init__(self, repo: ReadingRepository) -> None:
         self._repo = repo
 

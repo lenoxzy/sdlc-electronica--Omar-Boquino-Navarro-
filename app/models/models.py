@@ -1,32 +1,27 @@
-from typing import List, Optional
-from sqlalchemy import ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Column, Float, ForeignKey, Integer, String
+from sqlalchemy.orm import relationship
 
-from app.db import Base 
+from app.db import Base
+
 
 class Sensor(Base):
     __tablename__ = "sensor"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(30))
-    location: Mapped[Optional[str]]
-    
-    readings: Mapped[List["Reading"]] = relationship(
-        back_populates="sensor", cascade="all, delete-orphan"
-    )
+    id = Column(Integer, primary_key=True,index=True)
+    name = Column(String, index=True)
+    type = Column(String, nullable=False)      # <-- NUEVA COLUMNA
+    location = Column(String, nullable=True)   # <-- NUEVA COLUMNA
 
-    def __repr__(self) -> str:
-        return f"Sensor(id={self.id!r}, name={self.name!r}, location={self.location!r})"
+    # Relación con las lecturas (Un sensor tiene muchas lecturas)
+    readings = relationship("Reading", back_populates="sensor", cascade="all, ")
 
 class Reading(Base):
     __tablename__ = "reading"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    value: Mapped[float]
-    unit: Mapped[str] = mapped_column(String(10))
-    sensor_id: Mapped[int] = mapped_column(ForeignKey("sensor.id"))
-    
-    sensor: Mapped["Sensor"] = relationship(back_populates="readings")
+    id = Column(Integer, primary_key=True,index=True)
+    sensor_id = Column(Integer, ForeignKey("sensor.id"))
+    value = Column(Float, nullable=False)
+    unit = Column(String, nullable=False)
 
-    def __repr__(self) -> str:
-        return f"Reading(id={self.id!r}, value={self.value!r}, unit={self.unit!r})"
+    # Relación inversa (Una lectura pertenece a un sensor)
+    sensor = relationship("Sensor", back_populates="readings")
