@@ -1,4 +1,4 @@
-# Bitácora  - Semana 3
+# Bitacora  - Semana 3
 
 ## Entrada 1: 
 * Prompt que usé: "¿Cómo configuro la base de datos en memoria para los tests de FastAPI usando SQLite sin que me tire errores de tablas no encontradas al aislar las pruebas?"
