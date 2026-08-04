@@ -1,19 +1,29 @@
-from fastapi import FastAPI
+from datetime import datetime, timezone
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import String, Float, ForeignKey, DateTime
 
-from app.db import Base, engine
+class Base(DeclarativeBase):
+    pass
 
-# Importamos ambos routers
-from app.routers import reading_router, sensor_router
+class SensorModel(Base):
+    __tablename__ = "sensors"
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String)
+    type: Mapped[str] = mapped_column(String)
+    location: Mapped[str] = mapped_column(String)
 
-# Nos aseguramos de que las tablas existan
-Base.metadata.create_all(bind=engine)
-
-app = FastAPI(title="SensorHub API", version="1.0.0")
-
-# ¡Conectamos las dos piezas del CRUD!
-app.include_router(sensor_router.router)
-app.include_router(reading_router.router)
-
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok", "db": "connected"}
+class ReadingModel(Base):
+    __tablename__ = "readings"
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    sensor_id: Mapped[int] = mapped_column(ForeignKey("sensors.id"), index=True)
+    value: Mapped[float] = mapped_column(Float)
+    unit: Mapped[str] = mapped_column(String)
+    
+    # FIX: Agregamos created_at con datetime.now moderno y su índice
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, 
+        default=lambda: datetime.now(timezone.utc), 
+        index=True
+    )

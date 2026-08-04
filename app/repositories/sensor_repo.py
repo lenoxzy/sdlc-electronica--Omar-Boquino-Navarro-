@@ -1,34 +1,31 @@
+from typing import Protocol, Sequence
 from sqlalchemy.orm import Session
+from sqlalchemy import select
+from app.models.models import SensorModel  
 
-from app.models.models import Sensor
-from app.schemas.sensor_schema import SensorCreate
+# 1. El Protocolo: La interfaz que dicta las reglas (DIP)
+class SensorRepository(Protocol):
+    def add(self, name: str, type_: str, location: str) -> SensorModel: ...
+    def get_all(self) -> Sequence[SensorModel]: ...
+    def get_by_id(self, sensor_id: int) -> SensorModel | None: ...
 
-
+# 2. La Implementación: La clase que realmente toca la base de datos
 class SQLAlchemySensorRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session) -> None:
         self.db = db
 
-    def list_sensors(self, skip: int = 0, limit: int = 100) -> list[Sensor]:
-        return self.db.query(Sensor).offset(skip).limit(limit).all()
-
-    def get_sensor(self, sensor_id: int) -> Sensor | None:
-        return self.db.query(Sensor).filter(Sensor.id == sensor_id).first()
-
-    def add(self, sensor_data: SensorCreate) -> Sensor:
-        new_sensor = Sensor(
-            name=sensor_data.name,
-            type=sensor_data.type,
-            location=sensor_data.location
-        )
-        self.db.add(new_sensor)
+    def add(self, name: str, type_: str, location: str) -> SensorModel:
+        sensor = SensorModel(name=name, type=type_, location=location)
+        self.db.add(sensor)
         self.db.commit()
-        self.db.refresh(new_sensor)
-        return new_sensor
+        self.db.refresh(sensor)
+        return sensor
 
-    def delete(self, sensor_id: int) -> bool:
-        sensor = self.get_sensor(sensor_id)
-        if sensor:
-            self.db.delete(sensor)
-            self.db.commit()
-            return True
-        return False
+    def get_all(self) -> Sequence[SensorModel]:
+        # FIX: Sintaxis SQLAlchemy 2.x usando select() y scalars()
+        stmt = select(SensorModel)
+        return self.db.scalars(stmt).all()
+
+    def get_by_id(self, sensor_id: int) -> SensorModel | None:
+        # FIX: Sintaxis moderna para obtener por ID
+        return self.db.get(SensorModel, sensor_id)
