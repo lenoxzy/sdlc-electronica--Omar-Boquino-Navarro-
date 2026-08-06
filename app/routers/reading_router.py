@@ -1,12 +1,14 @@
-from typing import Generator, Any
+from collections.abc import Generator
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.db import SessionLocal
 from app.repositories.reading_repo import SQLAlchemyReadingRepository
 from app.schemas.reading_schema import ReadingCreate, ReadingOut, ReadingUpdate
+from app.services.exceptions import ReadingNotFoundError, SensorNotFoundError
 from app.services.reading_service import ReadingService
-from app.services.exceptions import SensorNotFoundError, ReadingNotFoundError 
 
 router = APIRouter()
 
@@ -19,7 +21,7 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
-def get_service(db: Session = Depends(get_db)) -> ReadingService: # noqa: B008 
+def get_service(db: Session = Depends(get_db)) -> ReadingService:  # noqa: B008 
     repo = SQLAlchemyReadingRepository(db)
     return ReadingService(repo=repo)
 
@@ -31,25 +33,25 @@ def list_readings(
     offset: int = 0,
     from_date: str | None = Query(None, alias="from"),
     to_date: str | None = Query(None, alias="to"),
-    service: ReadingService = Depends(get_service),# noqa: B008
-) -> Any: 
-    
-    # Llamamos al método público del servicio, pasando la paginación y filtros
-    readings = service.list_for_sensor(
-        sensor_id=str(id), 
-        limit=limit, 
-        offset=offset, 
-        from_date=from_date, 
-        to_date=to_date
-    )
-    return readings
+    service: ReadingService = Depends(get_service),  # noqa: B008
+) -> Any:
+    try:
+        return service.list_for_sensor(
+            sensor_id=str(id),
+            limit=limit,
+            offset=offset,
+            from_date=from_date,
+            to_date=to_date,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from None
 
 
 @router.post("/sensors/{id}/readings", response_model=ReadingOut, status_code=201)
 def create_reading(
     id: int,
     reading: ReadingCreate,
-    service: ReadingService = Depends(get_service),# noqa: B008
+    service: ReadingService = Depends(get_service),  # noqa: B008
 ) -> Any: 
     try:
         new_record = service.record(
@@ -64,7 +66,7 @@ def create_reading(
 
 
 @router.get("/readings/{id}", response_model=ReadingOut, status_code=200)
-def get_reading(id: int, service: ReadingService = Depends(get_service)) -> Any: 
+def get_reading(id: int, service: ReadingService = Depends(get_service)) -> Any: # noqa: B008
     try:
         # Conectado a la base de datos real
         return service.get_reading(id)
@@ -76,7 +78,7 @@ def get_reading(id: int, service: ReadingService = Depends(get_service)) -> Any:
 def update_reading(
     id: int, 
     patch_data: ReadingUpdate, 
-    service: ReadingService = Depends(get_service)
+    service: ReadingService = Depends(get_service) # noqa: B008
 ) -> Any: 
     try:
         # Actualización parcial real
@@ -88,7 +90,7 @@ def update_reading(
 
 
 @router.delete("/readings/{id}", status_code=204)
-def delete_reading(id: int, service: ReadingService = Depends(get_service)) -> None: 
+def delete_reading(id: int, service: ReadingService = Depends(get_service)) -> None: # noqa: B008
     try:
         # Borrado real
         service.delete_reading(id)

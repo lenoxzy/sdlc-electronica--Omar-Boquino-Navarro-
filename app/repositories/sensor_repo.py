@@ -1,31 +1,41 @@
-from typing import Protocol, Sequence
-from sqlalchemy.orm import Session
+from collections.abc import Sequence
+from typing import Protocol
+
 from sqlalchemy import select
-from app.models.models import SensorModel  
+from sqlalchemy.orm import Session
 
-# 1. El Protocolo: La interfaz que dicta las reglas (DIP)
+from app.models.models import Sensor
+
+
 class SensorRepository(Protocol):
-    def add(self, name: str, type_: str, location: str) -> SensorModel: ...
-    def get_all(self) -> Sequence[SensorModel]: ...
-    def get_by_id(self, sensor_id: int) -> SensorModel | None: ...
+    def add(self, name: str, type_: str, location: str) -> Sensor: ...
+    def get_all(self, skip: int = 0, limit: int = 100) -> Sequence[Sensor]: ...
+    def get_by_id(self, sensor_id: int) -> Sensor | None: ...
+    def delete(self, sensor_id: int) -> bool: ...
 
-# 2. La Implementación: La clase que realmente toca la base de datos
+
 class SQLAlchemySensorRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def add(self, name: str, type_: str, location: str) -> SensorModel:
-        sensor = SensorModel(name=name, type=type_, location=location)
+    def add(self, name: str, type_: str, location: str) -> Sensor:
+        sensor = Sensor(name=name, type=type_, location=location)
         self.db.add(sensor)
         self.db.commit()
         self.db.refresh(sensor)
         return sensor
 
-    def get_all(self) -> Sequence[SensorModel]:
-        # FIX: Sintaxis SQLAlchemy 2.x usando select() y scalars()
-        stmt = select(SensorModel)
+    def get_all(self, skip: int = 0, limit: int = 100) -> Sequence[Sensor]:
+        stmt = select(Sensor).offset(skip).limit(limit)
         return self.db.scalars(stmt).all()
 
-    def get_by_id(self, sensor_id: int) -> SensorModel | None:
-        # FIX: Sintaxis moderna para obtener por ID
-        return self.db.get(SensorModel, sensor_id)
+    def get_by_id(self, sensor_id: int) -> Sensor | None:
+        return self.db.get(Sensor, sensor_id)
+
+    def delete(self, sensor_id: int) -> bool:
+        sensor = self.db.get(Sensor, sensor_id)
+        if not sensor:
+            return False
+        self.db.delete(sensor)
+        self.db.commit()
+        return True

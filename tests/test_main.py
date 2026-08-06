@@ -1,9 +1,10 @@
+from collections.abc import Generator
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool  # <--- NUEVO IMPORT
-from typing import Generator
 
 from app.db import Base
 from app.main import app

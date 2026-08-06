@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Protocol
 
 from sqlalchemy import select
@@ -19,41 +20,89 @@ class ReadingModel:
 # --- 2. EL PROTOCOLO (Inversión de Dependencias) ---
 class ReadingRepository(Protocol):
     def add(self, sensor_id: str, value: float, unit: str) -> ReadingModel: ...
-    def list_for_sensor(self, sensor_id: str) -> list[ReadingModel]: ...
+    def list_for_sensor(
+        self,
+        sensor_id: str,
+        limit: int = 50,
+        offset: int = 0,
+        from_date: datetime | None = None,
+        to_date: datetime | None = None,
+    ) -> list[ReadingModel]: ...
+    def get(self, reading_id: int) -> ReadingModel | None: ...
+    def update(
+        self, reading_id: int, value: float | None = None, unit: str | None = None
+    ) -> ReadingModel | None: ...
+    def delete(self, reading_id: int) -> bool: ...
 
 
 # --- 3. LA IMPLEMENTACIÓN REAL (Capa de Datos) ---
 class SQLAlchemyReadingRepository:
     """Implementación real del repositorio usando SQLAlchemy."""
 
-    def __init__(self, db: Session) -> None: 
+    def __init__(self, db: Session) -> None:
         self.db = db
 
     def add(self, sensor_id: str, value: float, unit: str) -> ReadingModel:
-        # Buscamos si existe el sensor
         sensor = self.db.get(Sensor, int(sensor_id))
         if not sensor:
             raise ValueError("Sensor no encontrado")
 
-        # Creamos la lectura
         new_reading = Reading(value=value, unit=unit, sensor_id=sensor.id)
         self.db.add(new_reading)
         self.db.commit()
         self.db.refresh(new_reading)
 
-        return ReadingModel(
-            id=int(new_reading.id),
-            sensor_id=str(new_reading.sensor_id),
-            value=float(new_reading.value),
-            unit=str(new_reading.unit),
-        )
+        return self._to_model(new_reading)
 
-    def list_for_sensor(self, sensor_id: str) -> list[ReadingModel]:
+    def list_for_sensor(
+        self,
+        sensor_id: str,
+        limit: int = 50,
+        offset: int = 0,
+        from_date: datetime | None = None,
+        to_date: datetime | None = None,
+    ) -> list[ReadingModel]:
         stmt = select(Reading).where(Reading.sensor_id == int(sensor_id))
+        if from_date is not None:
+            stmt = stmt.where(Reading.created_at >= from_date)
+        if to_date is not None:
+            stmt = stmt.where(Reading.created_at <= to_date)
+        stmt = stmt.order_by(Reading.created_at).offset(offset).limit(limit)
+
         readings = self.db.scalars(stmt).all()
-        return [
-            ReadingModel(
-                id=int(r.id), sensor_id=str(r.sensor_id), value=float(r.value), unit=str(r.unit)
-            )
-            for r in readings
-        ]
+        return [self._to_model(r) for r in readings]
+
+    def get(self, reading_id: int) -> ReadingModel | None:
+        reading = self.db.get(Reading, reading_id)
+        return self._to_model(reading) if reading else None
+
+    def update(
+        self, reading_id: int, value: float | None = None, unit: str | None = None
+    ) -> ReadingModel | None:
+        reading = self.db.get(Reading, reading_id)
+        if not reading:
+            return None
+        if value is not None:
+            reading.value = value
+        if unit is not None:
+            reading.unit = unit
+        self.db.commit()
+        self.db.refresh(reading)
+        return self._to_model(reading)
+
+    def delete(self, reading_id: int) -> bool:
+        reading = self.db.get(Reading, reading_id)
+        if not reading:
+            return False
+        self.db.delete(reading)
+        self.db.commit()
+        return True
+
+    @staticmethod
+    def _to_model(r: Reading) -> ReadingModel:
+        return ReadingModel(
+            id=int(r.id),
+            sensor_id=str(r.sensor_id),
+            value=float(r.value),
+            unit=str(r.unit),
+        )
