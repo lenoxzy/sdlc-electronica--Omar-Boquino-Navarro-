@@ -60,5 +60,5 @@ class ReadingService:
             return datetime.fromisoformat(value)
         except ValueError:
             raise ValueError(
-                f"Formato de fecha invalido en '{field_name}': se espera ISO 8601 (ej. 2026-01-01)"
+                f"Formato de fecha invalido en '{field_name}': se espera ISO 8601 "
             ) from None

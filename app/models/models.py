@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
+
 from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-# Mantenemos tu importación original de la base de datos
 from app.db import Base
 
 
@@ -15,8 +15,12 @@ class Sensor(Base):
     type: Mapped[str] = mapped_column(String, nullable=False)
     location: Mapped[str | None] = mapped_column(String, nullable=True)
 
-    # Relación con las lecturas (Un sensor tiene muchas lecturas)
-    readings: Mapped[list["Reading"]] = relationship("Reading", back_populates="sensor", cascade="all, delete-orphan")
+ # Relación con las lecturas (Un sensor tiene muchas lecturas)
+    readings: Mapped[list["Reading"]] = relationship(
+        "Reading",
+        back_populates="sensor",
+        cascade="all, delete-orphan"
+    )
 
 
 class Reading(Base):

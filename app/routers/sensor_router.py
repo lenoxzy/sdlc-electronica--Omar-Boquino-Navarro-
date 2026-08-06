@@ -38,7 +38,10 @@ def create_sensor(
     return service.create(sensor) 
 
 @router.delete("/sensors/{id}", status_code=204)
-def delete_sensor(id: int, service: SensorService = Depends(get_sensor_service)) -> None:  # noqa: B008
+def delete_sensor(
+    id: int, 
+    service: SensorService = Depends(get_sensor_service)  # noqa: B008
+) -> None:
     try:
         service.delete(id)
         return None
