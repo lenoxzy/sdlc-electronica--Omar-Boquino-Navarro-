@@ -1,7 +1,10 @@
 
+from collections.abc import Generator
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import Generator, Any 
+
 from app.db import SessionLocal
 from app.repositories.sensor_repo import SQLAlchemySensorRepository
 from app.schemas.sensor_schema import SensorCreate, SensorOut

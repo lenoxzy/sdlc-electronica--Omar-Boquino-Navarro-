@@ -1,27 +1,38 @@
-from sqlalchemy import Column, Float, ForeignKey, Integer, String
-from sqlalchemy.orm import relationship
+from datetime import datetime, timezone
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+# Mantenemos tu importación original de la base de datos
 from app.db import Base
 
 
 class Sensor(Base):
     __tablename__ = "sensor"
 
-    id = Column(Integer, primary_key=True,index=True)
-    name = Column(String, index=True)
-    type = Column(String, nullable=False)      # <-- NUEVA COLUMNA
-    location = Column(String, nullable=True)   # <-- NUEVA COLUMNA
+    # Sintaxis 2.x usando Mapped y mapped_column
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String, index=True)
+    type: Mapped[str] = mapped_column(String, nullable=False)
+    location: Mapped[str | None] = mapped_column(String, nullable=True)
 
     # Relación con las lecturas (Un sensor tiene muchas lecturas)
-    readings = relationship("Reading", back_populates="sensor", cascade="all, ")
+    readings: Mapped[list["Reading"]] = relationship("Reading", back_populates="sensor", cascade="all, delete-orphan")
+
 
 class Reading(Base):
     __tablename__ = "reading"
 
-    id = Column(Integer, primary_key=True,index=True)
-    sensor_id = Column(Integer, ForeignKey("sensor.id"))
-    value = Column(Float, nullable=False)
-    unit = Column(String, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    sensor_id: Mapped[int] = mapped_column(ForeignKey("sensor.id"))
+    value: Mapped[float] = mapped_column(Float, nullable=False)
+    unit: Mapped[str] = mapped_column(String, nullable=False)
+    
+    # ✅ FIX: Agregamos la columna created_at con la fecha moderna para los filtros
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, 
+        default=lambda: datetime.now(timezone.utc), 
+        index=True
+    )
 
     # Relación inversa (Una lectura pertenece a un sensor)
-    sensor = relationship("Sensor", back_populates="readings")
+    sensor: Mapped["Sensor"] = relationship("Sensor", back_populates="readings")

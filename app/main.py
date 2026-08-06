@@ -1,29 +1,17 @@
-from datetime import datetime, timezone
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import String, Float, ForeignKey, DateTime
+from fastapi import FastAPI
 
-class Base(DeclarativeBase):
-    pass
+from app.db import Base, engine
+from app.models import models  # noqa: F401 — registra los modelos en Base.metadata
+from app.routers import reading_router, sensor_router
 
-class SensorModel(Base):
-    __tablename__ = "sensors"
-    
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String)
-    type: Mapped[str] = mapped_column(String)
-    location: Mapped[str] = mapped_column(String)
+app = FastAPI(title="SensorHub API", version="0.1.0")
 
-class ReadingModel(Base):
-    __tablename__ = "readings"
-    
-    id: Mapped[int] = mapped_column(primary_key=True)
-    sensor_id: Mapped[int] = mapped_column(ForeignKey("sensors.id"), index=True)
-    value: Mapped[float] = mapped_column(Float)
-    unit: Mapped[str] = mapped_column(String)
-    
-    # FIX: Agregamos created_at con datetime.now moderno y su índice
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, 
-        default=lambda: datetime.now(timezone.utc), 
-        index=True
-    )
+Base.metadata.create_all(bind=engine)
+
+app.include_router(sensor_router.router)
+app.include_router(reading_router.router)
+
+
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "ok"}

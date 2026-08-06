@@ -1,12 +1,14 @@
-from typing import Generator, Any
+from collections.abc import Generator
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.db import SessionLocal
 from app.repositories.reading_repo import SQLAlchemyReadingRepository
 from app.schemas.reading_schema import ReadingCreate, ReadingOut, ReadingUpdate
+from app.services.exceptions import ReadingNotFoundError, SensorNotFoundError
 from app.services.reading_service import ReadingService
-from app.services.exceptions import SensorNotFoundError, ReadingNotFoundError 
 
 router = APIRouter()
 
@@ -94,3 +96,23 @@ def delete_reading(id: int, service: ReadingService = Depends(get_service)) -> N
         service.delete_reading(id)
     except ReadingNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from None
+
+@router.get("/sensors/{id}/readings", response_model=list[ReadingOut], status_code=200)
+def list_readings(
+    id: int,
+    limit: int = 50,
+    offset: int = 0,
+    from_date: str | None = Query(None, alias="from"),
+    to_date: str | None = Query(None, alias="to"),
+    service: ReadingService = Depends(get_service),  # noqa: B008
+) -> Any:
+    try:
+        return service.list_for_sensor(
+            sensor_id=str(id),
+            limit=limit,
+            offset=offset,
+            from_date=from_date,
+            to_date=to_date,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from None

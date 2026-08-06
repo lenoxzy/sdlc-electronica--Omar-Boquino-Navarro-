@@ -8,6 +8,7 @@ from bad_sensor_system import (
     analizar_medicion,
 )
 
+
 # ==========================================
 # Pruebas para violación SRP (Responsabilidad Única)
 # ==========================================

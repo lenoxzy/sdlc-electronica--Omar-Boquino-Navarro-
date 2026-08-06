@@ -1,5 +1,8 @@
+from datetime import datetime
+
 from app.repositories.reading_repo import ReadingModel, ReadingRepository
-from app.services.exceptions import ReadingNotFoundError, SensorNotFoundError
+from app.services.exceptions import ReadingNotFoundError
+
 
 class ReadingService:
     """Lógica de negocio. Depende de la abstracción del repositorio (DIP)."""
@@ -13,40 +16,49 @@ class ReadingService:
         return self._repo.add(sensor_id, value, unit)
 
     def list_for_sensor(
-        self, 
-        sensor_id: str, 
-        limit: int = 50, 
-        offset: int = 0, 
-        from_date: str | None = None, 
-        to_date: str | None = None
+        self,
+        sensor_id: str,
+        limit: int = 50,
+        offset: int = 0,
+        from_date: str | None = None,
+        to_date: str | None = None,
     ) -> list[ReadingModel]:
-        # El router llama a este método público, ocultando "_repo"
+        parsed_from = self._parse_date(from_date, "from")
+        parsed_to = self._parse_date(to_date, "to")
         return self._repo.list_for_sensor(
-            sensor_id=sensor_id, 
-            limit=limit, 
-            offset=offset, 
-            from_date=from_date, 
-            to_date=to_date
+            sensor_id=sensor_id,
+            limit=limit,
+            offset=offset,
+            from_date=parsed_from,
+            to_date=parsed_to,
         )
 
     def get_reading(self, reading_id: int) -> ReadingModel:
-        reading = self._repo.get_by_id(reading_id)
+        reading = self._repo.get(reading_id)
         if not reading:
-            # Levantamos la excepción de dominio que creamos
             raise ReadingNotFoundError(f"Lectura con ID {reading_id} no encontrada")
         return reading
 
-    def update_reading(self, reading_id: int, value: float | None = None, unit: str | None = None) -> ReadingModel:
-        # Reutilizamos get_reading para asegurar que exista (levanta 404 si no)
-        self.get_reading(reading_id)
-        
-        # Delegamos la actualización al repositorio
-        updated_reading = self._repo.update(reading_id, value, unit)
-        return updated_reading
+    def update_reading(
+        self, reading_id: int, value: float | None = None, unit: str | None = None
+    ) -> ReadingModel:
+        self.get_reading(reading_id)  # valida existencia -> 404 si no existe
+        updated = self._repo.update(reading_id, value=value, unit=unit)
+        if not updated:
+            raise ReadingNotFoundError(f"Lectura con ID {reading_id} no encontrada")
+        return updated
 
     def delete_reading(self, reading_id: int) -> None:
-        # Comprobamos que existe antes de intentar borrar
         self.get_reading(reading_id)
-        
-        # Delegamos el borrado físico al repositorio 
         self._repo.delete(reading_id)
+
+    @staticmethod
+    def _parse_date(value: str | None, field_name: str) -> datetime | None:
+        if value is None:
+            return None
+        try:
+            return datetime.fromisoformat(value)
+        except ValueError:
+            raise ValueError(
+                f"Formato de fecha invalido en '{field_name}': se espera ISO 8601 (ej. 2026-01-01)"
+            ) from None
