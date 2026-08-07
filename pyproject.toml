@@ -7,6 +7,8 @@
 # UP: pyupgrade (Te obliga a usar sintaxis moderna de Python)
 # B: flake8-bugbear (Encuentra posibles bugs y trampas lógicas)
 select = ["E", "F", "I", "UP", "B"]
+[tool.ruff]
+extend-exclude = ["migrations/versions"]
 
 [tool.pytest.ini_options]
 # Ejecuta coverage en la carpeta actual y falla si es menor al 80%

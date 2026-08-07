@@ -1,21 +1,17 @@
-from logging.config import fileConfig
-
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
-from alembic import context
-
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
-config = context.config
 import sys
+from logging.config import fileConfig
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parents[1]))
+from alembic import context
+from sqlalchemy import engine_from_config, pool
 
 from app.db import Base, get_database_url
 from app.models import models  # noqa: F401 — registra los modelos en Base.metadata
 
+# this is the Alembic Config object, which provides
+# access to the values within the .ini file in use.
+config = context.config
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 config.set_main_option("sqlalchemy.url", get_database_url())
 target_metadata = Base.metadata
 # Interpret the config file for Python logging.
