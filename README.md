@@ -40,4 +40,4 @@ API desplegada en Render: **https://sensorhub-api-axet.onrender.com**
 - Healthcheck: https://sensorhub-api-axet.onrender.com/health
 - Documentación interactiva (Swagger): https://sensorhub-api-axet.onrender.com/docs
 
-> Nota: el free tier de Render "duerme" tras 15 minutos sin tráfico — la primera petición puede tardar hasta un minuto en responder.
+> Nota: el free tier de Render "duerme" tras 15 minutos sin tráfico — la primera petición puede tardar en responder.
