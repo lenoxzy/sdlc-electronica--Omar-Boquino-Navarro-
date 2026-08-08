@@ -28,3 +28,16 @@ Establece dos reglas clave para el software: los módulos de alto nivel no deben
 
 ##  Bitácora de IA
 Como parte de mi flujo de desarrollo profesional, utilicé Inteligencia Artificial como asistente (Copilot/Gemini) para generar estructura base, proponer tests y comprender errores de arquitectura.Las interacciones, los prompts utilizados y mi criterio para aceptar o modificar el código generado están documentados en mi archivo AI_LOG.md.
+
+
+# Semana_4
+![CI](https://github.com/lenoxzy/sdlc-electronica--Omar-Boquino-Navarro-/actions/workflows/ci.yml/badge.svg)
+
+## Despliegue en producción
+
+API desplegada en Render: **https://sensorhub-api-axet.onrender.com**
+
+- Healthcheck: https://sensorhub-api-axet.onrender.com/health
+- Documentación interactiva (Swagger): https://sensorhub-api-axet.onrender.com/docs
+
+> Nota: el free tier de Render "duerme" tras 15 minutos sin tráfico — la primera petición puede tardar hasta un minuto en responder.
