@@ -1,0 +1,14 @@
+.venv
+__pycache__
+*.pyc
+.git
+.pytest_cache
+.mypy_cache
+.ruff_cache
+*.db
+tests
+semana1
+semana2
+semana3
+semana4
+semana5

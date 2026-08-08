@@ -1,16 +1,24 @@
-FROM python:3.12-slim
+# ---- Etapa de build ----
+FROM python:3.12-slim AS builder
 WORKDIR /app
 
-# Dependencias primero: aprovecha la cache de capas
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia el resto del código
-COPY . .
+# ---- Etapa final (runtime) ----
+FROM python:3.12-slim
+WORKDIR /app
 
-# Expone el puerto que usará Uvicorn
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+COPY app ./app
+COPY migrations ./migrations
+COPY alembic.ini .
+
 EXPOSE 8000
 
-# Comando para arrancar el servidor
-# Comando para migrar la base de datos y luego arrancar el servidor
 CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]

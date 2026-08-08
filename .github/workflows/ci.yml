@@ -1,8 +1,12 @@
-# .github/workflows/ci.yml
 name: CI
 on:
   push: { branches: [main] }
   pull_request:
+
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -10,10 +14,96 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - run: pip install -r requirements.txt && pip install pytest pytest-cov ruff mypy
+      - run: pip install -r requirements-dev.txt
       - name: Lint
         run: ruff check .
       - name: Types
         run: mypy app --ignore-missing-imports
       - name: Tests
         run: pytest
+
+  smoke-test:
+    needs: test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: sensor
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: sensorhub
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U sensor -d sensorhub"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://sensor:secret@localhost:5432/sensorhub
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements.txt
+      - name: Migraciones
+        run: alembic upgrade head
+      - name: Levantar API
+        run: nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+      - name: Esperar a que la API responda
+        run: |
+          for i in $(seq 1 10); do
+            curl -sf http://localhost:8000/health && break
+            sleep 2
+          done
+      - name: Smoke test - crear sensor y lectura
+        run: |
+          SENSOR_ID=$(curl -sf -X POST http://localhost:8000/sensors \
+            -H "Content-Type: application/json" \
+            -d '{"name":"Smoke Sensor","type":"temperature","location":"CI"}' \
+            | python -c "import sys, json; print(json.load(sys.stdin)['id'])")
+          echo "Sensor creado: $SENSOR_ID"
+          curl -sf -X POST "http://localhost:8000/sensors/$SENSOR_ID/readings" \
+            -H "Content-Type: application/json" \
+            -d '{"value": 42.5, "unit": "C"}'
+          curl -sf "http://localhost:8000/sensors/$SENSOR_ID/readings" | grep "42.5"
+
+  security-scan:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir imagen Docker
+        run: docker build -t sensorhub:ci .
+      - name: Escaneo de vulnerabilidades con Trivy
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: "sensorhub:ci"
+          format: "table"
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: "CRITICAL,HIGH"
+
+  notify-on-failure:
+    needs: [test, smoke-test, security-scan]
+    if: failure() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `CI falló en main - commit ${context.sha.substring(0, 7)}`,
+              body: `El pipeline de CI falló en la rama main.\n\nCommit: ${context.sha}\nEjecución: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              labels: ["ci-failure"]
+            })
+
+  deploy:
+    needs: [test, smoke-test, security-scan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Disparar despliegue en Render
+        run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
