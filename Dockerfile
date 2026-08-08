@@ -12,4 +12,5 @@ COPY . .
 EXPOSE 8000
 
 # Comando para arrancar el servidor
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Comando para migrar la base de datos y luego arrancar el servidor
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
