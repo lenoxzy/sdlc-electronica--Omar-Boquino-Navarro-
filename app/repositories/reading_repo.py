@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.models import Reading, Sensor
+from app.services.exceptions import SensorNotFoundError
 
 
 # --- 1. MODELO DE DATOS (Lo que entiende la capa de negocio) ---
@@ -45,7 +46,7 @@ class SQLAlchemyReadingRepository:
     def add(self, sensor_id: str, value: float, unit: str) -> ReadingModel:
         sensor = self.db.get(Sensor, int(sensor_id))
         if not sensor:
-            raise ValueError("Sensor no encontrado")
+            raise SensorNotFoundError(f"Sensor con ID {sensor_id} no encontrado")
 
         new_reading = Reading(value=value, unit=unit, sensor_id=sensor.id)
         self.db.add(new_reading)

@@ -1,27 +1,20 @@
-
-from collections.abc import Generator
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.db import SessionLocal
+from app.db import get_db
 from app.repositories.sensor_repo import SQLAlchemySensorRepository
 from app.schemas.sensor_schema import SensorCreate, SensorOut
 from app.services.sensor_service import SensorService
 
 router = APIRouter()
 
-def get_db() -> Generator[Session, None, None]: 
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
-def get_sensor_service(db: Session = Depends(get_db)) -> SensorService: # noqa: B008 <-- Devuelve tu clase servicio
+def get_sensor_service(db: Session = Depends(get_db)) -> SensorService:  # noqa: B008
     repo = SQLAlchemySensorRepository(db)
     return SensorService(repo=repo)
+
 
 @router.get("/sensors/{id}", response_model=SensorOut, status_code=200)
 def get_sensor(id: int, service: SensorService = Depends(get_sensor_service)) -> Any:  # noqa: B008
@@ -30,23 +23,24 @@ def get_sensor(id: int, service: SensorService = Depends(get_sensor_service)) ->
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from None
 
+
 @router.post("/sensors", response_model=SensorOut, status_code=201)
 def create_sensor(
-    sensor: SensorCreate, 
+    sensor: SensorCreate,
     service: SensorService = Depends(get_sensor_service),  # noqa: B008
 ) -> Any:
-    return service.create(sensor) 
+    return service.create(sensor)
+
 
 @router.delete("/sensors/{id}", status_code=204)
 def delete_sensor(
-    id: int, 
-    service: SensorService = Depends(get_sensor_service)  # noqa: B008
+    id: int, service: SensorService = Depends(get_sensor_service)  # noqa: B008
 ) -> None:
     try:
         service.delete(id)
-        return None
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from None
+
 
 @router.get("/sensors", response_model=list[SensorOut], status_code=200)
 def list_sensors(

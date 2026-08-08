@@ -11,8 +11,8 @@ select = ["E", "F", "I", "UP", "B"]
 extend-exclude = ["migrations/versions"]
 
 [tool.pytest.ini_options]
-# Ejecuta coverage en la carpeta actual y falla si es menor al 80%
-addopts = "--cov=. --cov-fail-under=80"
+addopts = "--cov=app --cov-fail-under=80"
+testpaths = ["tests"]
 
 [tool.mypy]
 # Prohíbe crear funciones o métodos sin Type Hints (tipado estático)
