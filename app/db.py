@@ -1,21 +1,41 @@
+import os
+from collections.abc import Generator
 from pathlib import Path
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
-# 1. Calculamos la ruta raíz de tu proyecto dinámicamente
-# __file__ es db.py, .parent es app/, .parent.parent es tu carpeta raíz
 BASE_DIR = Path(__file__).resolve().parent.parent
+DEFAULT_SQLITE_URL = f"sqlite:///{BASE_DIR}/sensorhub.db"
 
-# 2. Le decimos a SQLite que SIEMPRE lo guarde en esa raíz
-SQLALCHEMY_DATABASE_URL = f"sqlite:///{BASE_DIR}/sensorhub.db"
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
+def get_database_url() -> str:
+    url = os.getenv("DATABASE_URL", DEFAULT_SQLITE_URL)
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+psycopg://", 1)
+    if url.startswith("postgresql://") and "+psycopg" not in url:
+        return url.replace("postgresql://", "postgresql+psycopg://", 1)
+    return url
+
+
+SQLALCHEMY_DATABASE_URL = get_database_url()
+
+connect_args: dict[str, bool] = {}
+if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
+    connect_args = {"check_same_thread": False}
+
+engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args=connect_args)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 class Base(DeclarativeBase):
     pass
+
+
+def get_db() -> Generator[Session, None, None]:
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

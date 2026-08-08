@@ -1,10 +1,9 @@
-from collections.abc import Generator
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.db import SessionLocal
+from app.db import get_db
 from app.repositories.reading_repo import SQLAlchemyReadingRepository
 from app.schemas.reading_schema import ReadingCreate, ReadingOut, ReadingUpdate
 from app.services.exceptions import ReadingNotFoundError, SensorNotFoundError
@@ -13,15 +12,7 @@ from app.services.reading_service import ReadingService
 router = APIRouter()
 
 
-def get_db() -> Generator[Session, None, None]:
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-def get_service(db: Session = Depends(get_db)) -> ReadingService:  # noqa: B008 
+def get_service(db: Session = Depends(get_db)) -> ReadingService:  # noqa: B008
     repo = SQLAlchemyReadingRepository(db)
     return ReadingService(repo=repo)
 
@@ -52,23 +43,18 @@ def create_reading(
     id: int,
     reading: ReadingCreate,
     service: ReadingService = Depends(get_service),  # noqa: B008
-) -> Any: 
+) -> Any:
     try:
-        new_record = service.record(
-            sensor_id=str(id), value=reading.value, unit=reading.unit
-        )
-        return new_record
+        return service.record(sensor_id=str(id), value=reading.value, unit=reading.unit)
     except SensorNotFoundError as e:
-        # Excepción de dominio en lugar de comparar strings
         raise HTTPException(status_code=404, detail=str(e)) from None
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e)) from None
 
 
 @router.get("/readings/{id}", response_model=ReadingOut, status_code=200)
-def get_reading(id: int, service: ReadingService = Depends(get_service)) -> Any: # noqa: B008
+def get_reading(id: int, service: ReadingService = Depends(get_service)) -> Any:  # noqa: B008
     try:
-        # Conectado a la base de datos real
         return service.get_reading(id)
     except ReadingNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from None
@@ -76,12 +62,11 @@ def get_reading(id: int, service: ReadingService = Depends(get_service)) -> Any:
 
 @router.patch("/readings/{id}", response_model=ReadingOut, status_code=200)
 def update_reading(
-    id: int, 
-    patch_data: ReadingUpdate, 
-    service: ReadingService = Depends(get_service) # noqa: B008
-) -> Any: 
+    id: int,
+    patch_data: ReadingUpdate,
+    service: ReadingService = Depends(get_service),  # noqa: B008
+) -> Any:
     try:
-        # Actualización parcial real
         return service.update_reading(id, value=patch_data.value, unit=patch_data.unit)
     except ReadingNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from None
@@ -90,9 +75,8 @@ def update_reading(
 
 
 @router.delete("/readings/{id}", status_code=204)
-def delete_reading(id: int, service: ReadingService = Depends(get_service)) -> None: # noqa: B008
+def delete_reading(id: int, service: ReadingService = Depends(get_service)) -> None:  # noqa: B008
     try:
-        # Borrado real
         service.delete_reading(id)
     except ReadingNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from None
