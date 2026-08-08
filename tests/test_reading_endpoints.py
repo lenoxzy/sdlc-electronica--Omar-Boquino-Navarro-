@@ -16,7 +16,7 @@ def test_get_reading_success(client: TestClient) -> None:
     sensor_id = _create_sensor(client)
     reading_id = _create_reading(client, sensor_id)
     response = client.get(f"/readings/{reading_id}")
-    assert response.status_code == 200
+    assert response.status_code == 200 asdfasf
     assert response.json()["id"] == reading_id
 
 
