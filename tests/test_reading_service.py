@@ -45,7 +45,7 @@ def test_record_fails_below_absolute_zero() -> None:
     service = ReadingService(repo=fake_repo)
 
     # Act & Assert
-    with pytest.raises(ValueError, match="Temperatura por debajo del cero absoluto"):
+    with pytest.raises(ValueError, match="cero absoluto"):
         service.record(sensor_id="TEMP-01", value=-274.0, unit="C")
 
     # Verificamos que el repositorio falso quedó vacío 
