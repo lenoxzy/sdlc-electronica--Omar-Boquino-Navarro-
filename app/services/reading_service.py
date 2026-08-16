@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 from app.domain.physics import validate_physics
@@ -5,8 +6,12 @@ from app.repositories.reading_repo import ReadingModel, ReadingRepository
 from app.services.alert_service import AlertService
 from app.services.exceptions import ReadingNotFoundError
 
+logger = logging.getLogger(__name__)
+
 
 class ReadingService:
+    """Lógica de negocio. Depende de la abstracción del repositorio (DIP)."""
+
     def __init__(
         self,
         repo: ReadingRepository,
@@ -18,8 +23,20 @@ class ReadingService:
     def record(self, sensor_id: str, value: float, unit: str) -> ReadingModel:
         validate_physics(value, unit)
         reading = self._repo.add(sensor_id, value, unit)
+
         if self._alert_service is not None:
-            self._alert_service.evaluate(reading)
+            try:
+                self._alert_service.evaluate(reading)
+            except Exception:
+                # Un fallo al evaluar/registrar la alerta NO debe tumbar
+                # la creación de la lectura, que ya se guardó con éxito.
+                logger.exception(
+                    "Fallo al evaluar alerta para la lectura %s (sensor %s); "
+                    "la lectura se guardó correctamente.",
+                    reading.id,
+                    sensor_id,
+                )
+
         return reading
 
     def list_for_sensor(
@@ -57,10 +74,6 @@ class ReadingService:
     ) -> ReadingModel:
         current = self.get_reading(reading_id)  # 404 si no existe
 
-        # Valida el resultado EFECTIVO del patch, no solo los campos que
-        # llegaron: cubre cambiar solo "value" (unit se mantiene) y
-        # también cambiar solo "unit" (el value existente podría dejar
-        # de ser válido para la nueva unidad).
         effective_value = value if value is not None else current.value
         effective_unit = unit if unit is not None else current.unit
         validate_physics(effective_value, effective_unit)

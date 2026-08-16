@@ -101,6 +101,20 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"value": 42.5, "unit": "C"}'
           curl -sf "http://localhost:8000/sensors/$SENSOR_ID/readings" | grep "42.5"
+      - name: Smoke test - alertas por umbral
+        # Valida el flujo nuevo de la Semana 5 contra Postgres real:
+        # crea un sensor CON umbral, registra una lectura que lo supera,
+        # y confirma que la alerta queda registrada y es consultable.
+        run: |
+          ALERT_SENSOR_ID=$(curl -sf -X POST http://localhost:8000/sensors \
+            -H "Content-Type: application/json" \
+            -d '{"name":"Sensor con umbral","type":"temperature","alert_threshold":30.0}' \
+            | python -c "import sys, json; print(json.load(sys.stdin)['id'])")
+          echo "Sensor con umbral creado: $ALERT_SENSOR_ID"
+          curl -sf -X POST "http://localhost:8000/sensors/$ALERT_SENSOR_ID/readings" \
+            -H "Content-Type: application/json" \
+            -d '{"value": 99.0, "unit": "C"}'
+          curl -sf "http://localhost:8000/sensors/$ALERT_SENSOR_ID/alerts" | grep "99.0"
 
   # Job de seguridad: construye la imagen Docker real (la misma que se
   # despliega) y la escanea buscando vulnerabilidades conocidas (CVEs).
