@@ -2,18 +2,25 @@ from datetime import datetime
 
 from app.domain.physics import validate_physics
 from app.repositories.reading_repo import ReadingModel, ReadingRepository
+from app.services.alert_service import AlertService
 from app.services.exceptions import ReadingNotFoundError
 
 
 class ReadingService:
-    """Lógica de negocio. Depende de la abstracción del repositorio (DIP)."""
-
-    def __init__(self, repo: ReadingRepository) -> None:
+    def __init__(
+        self,
+        repo: ReadingRepository,
+        alert_service: AlertService | None = None,
+    ) -> None:
         self._repo = repo
+        self._alert_service = alert_service
 
     def record(self, sensor_id: str, value: float, unit: str) -> ReadingModel:
         validate_physics(value, unit)
-        return self._repo.add(sensor_id, value, unit)
+        reading = self._repo.add(sensor_id, value, unit)
+        if self._alert_service is not None:
+            self._alert_service.evaluate(reading)
+        return reading
 
     def list_for_sensor(
         self,

@@ -21,7 +21,10 @@ class Sensor(Base):
         back_populates="sensor",
         cascade="all, delete-orphan"
     )
-
+    
+    alert_threshold: Mapped[float | None] = mapped_column(
+        Float, nullable=True
+    )
 
 class Reading(Base):
     __tablename__ = "reading"
@@ -40,3 +43,24 @@ class Reading(Base):
 
     # Relación inversa (Una lectura pertenece a un sensor)
     sensor: Mapped["Sensor"] = relationship("Sensor", back_populates="readings")
+
+
+
+class Alert(Base):
+    __tablename__ = "alert"
+
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, index=True
+    )
+    sensor_id: Mapped[int] = mapped_column(
+        ForeignKey("sensor.id"), index=True
+    )
+    reading_id: Mapped[int] = mapped_column(ForeignKey("reading.id"))
+    value: Mapped[float] = mapped_column(Float, nullable=False)
+    threshold: Mapped[float] = mapped_column(Float, nullable=False)
+    message: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        index=True,
+    )
