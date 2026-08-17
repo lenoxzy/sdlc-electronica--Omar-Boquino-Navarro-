@@ -22,6 +22,15 @@ class AlertService:
         if not AnomalyService.is_anomalous(reading.value, threshold):
             return None
 
+        try:
+            sensor_id_int = int(reading.sensor_id)
+        except (TypeError, ValueError):
+            raise ValueError(
+                f"sensor_id '{reading.sensor_id}' no es convertible a "
+                f"entero; no se pudo registrar la alerta de la lectura "
+                f"{reading.id}"
+            ) from None
+
         message = (
             f"Sensor {reading.sensor_id}: lectura {reading.value} "
             f"supera el umbral {threshold}"
@@ -29,7 +38,7 @@ class AlertService:
         self._strategy.notify(message)
 
         return self._repo.add(
-            sensor_id=int(reading.sensor_id),
+            sensor_id=sensor_id_int,
             reading_id=reading.id,
             value=reading.value,
             threshold=threshold,

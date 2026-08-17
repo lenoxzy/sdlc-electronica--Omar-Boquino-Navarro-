@@ -69,7 +69,11 @@ class SQLAlchemyReadingRepository:
             stmt = stmt.where(Reading.created_at >= from_date)
         if to_date is not None:
             stmt = stmt.where(Reading.created_at <= to_date)
-        stmt = stmt.order_by(Reading.created_at).offset(offset).limit(limit)
+        stmt = (
+            stmt.order_by(Reading.created_at, Reading.id)
+            .offset(offset)
+            .limit(limit)
+        )
 
         readings = self.db.scalars(stmt).all()
         return [self._to_model(r) for r in readings]
