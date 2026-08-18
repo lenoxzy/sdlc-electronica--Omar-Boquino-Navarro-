@@ -42,3 +42,39 @@ regeneraría el archivo con el mismo formato, obligándome a repetir el ajuste
 cada vez. Acepté la exclusión: es código generado por una herramienta, no
 código que yo mantengo línea por línea, y es la práctica estándar para
 carpetas de migraciones autogeneradas.
+
+## Semana 5 · Entrada 1
+Prompt (vía Aider, modelo gemini/gemini-3.6-flash): "Crea una clase
+AnomalyService con un método check(reading, threshold) que use is_anomalous
+internamente y registre el resultado. Sigue el patrón de inyección de
+dependencias que ya uso en ReadingService."
+
+Aider generó AnomalyService completa en dos commits automáticos separados.
+Rechacé y corregí dos cosas con un commit propio posterior:
+- is_anomalous usaba abs(value) > threshold sin que se lo pidiera, cambiando
+  la semántica: con umbral de calor, una lectura muy fría también activaría
+  la alerta. Lo definí en la Tarea 2 de prompting.md como value > threshold
+  y Aider lo alteró sin avisar - lo revertí a la versión original.
+- check(reading: Any, ...) usaba tipado débil pese a que el proyecto exige
+  disallow_untyped_defs en mypy estricto. Lo tipé como ReadingModel, el tipo
+  real que ya uso en todo el proyecto.
+Acepté sin cambios: la inyección de logger, el patrón de logging
+warning/info, y la estructura general de la clase.
+
+## Semana 5 · Día 6 — Peer review humano vs. IA
+
+1. Ver el review de la IA antes de terminar mi propia pasada humana
+   contaminó mi capacidad de encontrar cosas "a ciegas" — orden correcto:
+   primero pasada humana completa, IA después como segunda opinión.
+
+2. La IA (con solo 4 archivos de código, sin contexto del PR) encontró
+   violaciones de arquitectura y tipos que yo no había anotado por
+   escrito: falta de AlertService, threshold_breached sin Literal,
+   router retornando el modelo ORM en vez del schema.
+
+3. Yo encontré algo que la IA NUNCA pudo haber visto: el título y la
+   descripción del PR eran vagos e insuficientes. No es que yo sea mejor
+   revisando código — es que la IA nunca tuvo ese contexto en el prompt.
+   Un review de IA es tan completo como el contexto que le des; si no le
+   compartes el PR completo (metadata incluida), tiene un punto ciego
+   estructural que un humano con acceso real al repositorio no tiene.
