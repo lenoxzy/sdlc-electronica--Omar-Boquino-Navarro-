@@ -4,18 +4,25 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.db import get_db
+from app.repositories.alert_repo import SQLAlchemyAlertRepository
 from app.repositories.reading_repo import SQLAlchemyReadingRepository
 from app.schemas.reading_schema import ReadingCreate, ReadingOut, ReadingUpdate
+from app.services.alert_service import AlertService
+from app.services.alert_strategies import LogAlertStrategy
 from app.services.exceptions import ReadingNotFoundError, SensorNotFoundError
 from app.services.reading_service import ReadingService
 
 router = APIRouter()
 
 
-def get_service(db: Session = Depends(get_db)) -> ReadingService:  # noqa: B008
-    repo = SQLAlchemyReadingRepository(db)
-    return ReadingService(repo=repo)
 
+
+
+def get_service(db: Session = Depends(get_db)) -> ReadingService:  # noqa: B008
+    reading_repo = SQLAlchemyReadingRepository(db)
+    alert_repo = SQLAlchemyAlertRepository(db)
+    alert_service = AlertService(repo=alert_repo, strategy=LogAlertStrategy())
+    return ReadingService(repo=reading_repo, alert_service=alert_service)
 
 @router.get("/sensors/{id}/readings", response_model=list[ReadingOut], status_code=200)
 def list_readings(

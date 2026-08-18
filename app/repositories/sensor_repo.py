@@ -8,7 +8,13 @@ from app.models.models import Sensor
 
 
 class SensorRepository(Protocol):
-    def add(self, name: str, type_: str, location: str | None = None) -> Sensor: ...
+    def add(
+        self,
+        name: str,
+        type_: str,
+        location: str | None = None,
+        alert_threshold: float | None = None,
+    ) -> Sensor: ...
     def get_all(self, skip: int = 0, limit: int = 100) -> Sequence[Sensor]: ...
     def get_by_id(self, sensor_id: int) -> Sensor | None: ...
     def delete(self, sensor_id: int) -> bool: ...
@@ -18,8 +24,19 @@ class SQLAlchemySensorRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def add(self, name: str, type_: str, location: str | None = None) -> Sensor:
-        sensor = Sensor(name=name, type=type_, location=location)
+    def add(
+        self,
+        name: str,
+        type_: str,
+        location: str | None = None,
+        alert_threshold: float | None = None,
+    ) -> Sensor:
+        sensor = Sensor(
+            name=name,
+            type=type_,
+            location=location,
+            alert_threshold=alert_threshold,
+        )
         self.db.add(sensor)
         self.db.commit()
         self.db.refresh(sensor)

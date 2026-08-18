@@ -1,31 +1,49 @@
 name: CI
+
+# Se dispara en dos casos: cuando hay push directo a main (poco frecuente,
+# porque la branch protection normalmente lo bloquea y obliga a pasar por PR),
+# y en cualquier Pull Request, sin importar hacia qué rama vaya dirigido.
 on:
   push: { branches: [main] }
   pull_request:
 
+# Permisos a nivel de todo el workflow.
+# contents: read -> necesario para que actions/checkout pueda clonar el repo.
+# issues: write -> necesario para que el job notify-on-failure pueda crear
+# un issue automáticamente cuando algo falla en main.
 permissions:
   contents: read
   issues: write
 
 jobs:
+  # Job principal: valida que el código cumple los estándares de calidad
+  # del proyecto (estilo, tipos) y que la lógica de negocio funciona.
+  # Corre contra SQLite en memoria (rápido, no necesita levantar Postgres).
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4  # descarga el código del repo al runner
       - uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
+        with: { python-version: "3.12" }  # misma versión que usamos en local y en Docker
+      # requirements-dev.txt incluye requirements.txt (producción) + las
+      # herramientas de desarrollo (pytest, ruff, mypy) vía "-r requirements.txt"
       - run: pip install -r requirements-dev.txt
       - name: Lint
-        run: ruff check .
+        run: ruff check .  # revisa estilo y errores lógicos en todo el repo
       - name: Types
-        run: mypy app --ignore-missing-imports
+        run: mypy app --ignore-missing-imports  # solo valida tipos en app/, no en tests/ ni migrations/
       - name: Tests
-        run: pytest
+        run: pytest  # corre pytest; --cov y --cov-fail-under=80 vienen de pyproject.toml
 
+  # Job de integración real: valida que el flujo completo (Alembic + API)
+  # funciona contra PostgreSQL de verdad, no solo contra SQLite (que es más
+  # permisivo y puede esconder errores que sí truenan en producción).
   smoke-test:
-    needs: test
+    needs: test  # solo corre si "test" pasó, para no gastar minutos de CI en vano
     runs-on: ubuntu-latest
     services:
+      # GitHub Actions levanta este contenedor de Postgres como un servicio
+      # auxiliar, accesible en localhost desde los steps de este job.
       postgres:
         image: postgres:16
         env:
@@ -33,29 +51,46 @@ jobs:
           POSTGRES_PASSWORD: secret
           POSTGRES_DB: sensorhub
         ports: ["5432:5432"]
+        # Igual que el healthcheck de docker-compose: evita que los steps
+        # siguientes intenten conectarse antes de que Postgres esté listo.
         options: >-
           --health-cmd "pg_isready -U sensor -d sensorhub"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
     env:
+      # Misma variable que lee get_database_url() en local/Docker — aquí
+      # apunta a "localhost" porque el servicio postgres corre en el mismo
+      # runner, no en una red Docker separada como en docker-compose.
       DATABASE_URL: postgresql+psycopg://sensor:secret@localhost:5432/sensorhub
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
+      # Aquí solo instalamos requirements.txt (sin dev tools) porque este
+      # job simula producción, no necesita pytest/ruff/mypy.
       - run: pip install -r requirements.txt
       - name: Migraciones
-        run: alembic upgrade head
+        run: alembic upgrade head  # crea el esquema real en el Postgres del servicio
       - name: Levantar API
+        # nohup + & la deja corriendo en segundo plano; el step termina
+        # inmediatamente pero el proceso uvicorn sigue vivo para los
+        # siguientes steps del mismo job.
         run: nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 &
       - name: Esperar a que la API responda
+        # Uvicorn tarda un par de segundos en arrancar; este loop reintenta
+        # /health hasta 10 veces (20s máx) antes de continuar.
         run: |
           for i in $(seq 1 10); do
             curl -sf http://localhost:8000/health && break
             sleep 2
           done
       - name: Smoke test - crear sensor y lectura
+        # Prueba de extremo a extremo real, sobre HTTP:
+        # 1) crea un sensor y extrae su id de la respuesta JSON
+        # 2) crea una lectura para ese sensor
+        # 3) confirma que la lectura aparece al listarla
+        # Si CUALQUIERA de estos pasos falla (curl -f), el job falla.
         run: |
           SENSOR_ID=$(curl -sf -X POST http://localhost:8000/sensors \
             -H "Content-Type: application/json" \
@@ -66,7 +101,23 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"value": 42.5, "unit": "C"}'
           curl -sf "http://localhost:8000/sensors/$SENSOR_ID/readings" | grep "42.5"
+      - name: Smoke test - alertas por umbral
+        # Valida el flujo nuevo de la Semana 5 contra Postgres real:
+        # crea un sensor CON umbral, registra una lectura que lo supera,
+        # y confirma que la alerta queda registrada y es consultable.
+        run: |
+          ALERT_SENSOR_ID=$(curl -sf -X POST http://localhost:8000/sensors \
+            -H "Content-Type: application/json" \
+            -d '{"name":"Sensor con umbral","type":"temperature","alert_threshold":30.0}' \
+            | python -c "import sys, json; print(json.load(sys.stdin)['id'])")
+          echo "Sensor con umbral creado: $ALERT_SENSOR_ID"
+          curl -sf -X POST "http://localhost:8000/sensors/$ALERT_SENSOR_ID/readings" \
+            -H "Content-Type: application/json" \
+            -d '{"value": 99.0, "unit": "C"}'
+          curl -sf "http://localhost:8000/sensors/$ALERT_SENSOR_ID/alerts" | grep "99.0"
 
+  # Job de seguridad: construye la imagen Docker real (la misma que se
+  # despliega) y la escanea buscando vulnerabilidades conocidas (CVEs).
   security-scan:
     needs: test
     runs-on: ubuntu-latest
@@ -79,10 +130,13 @@ jobs:
         with:
           image-ref: "sensorhub:ci"
           format: "table"
-          exit-code: "1"
-          ignore-unfixed: true
-          severity: "CRITICAL,HIGH"
+          exit-code: "1"        # si encuentra algo, el job falla (no solo informa)
+          ignore-unfixed: true  # no falla por CVEs que aún no tienen parche disponible
+          severity: "CRITICAL,HIGH"  # ignora vulnerabilidades de severidad baja/media
 
+  # Si test, smoke-test o security-scan fallan Y el evento fue en main
+  # (no en un PR), crea automáticamente un issue en el repo con el link
+  # directo a la ejecución que falló.
   notify-on-failure:
     needs: [test, smoke-test, security-scan]
     if: failure() && github.ref == 'refs/heads/main'
@@ -90,6 +144,9 @@ jobs:
     steps:
       - uses: actions/github-script@v7
         with:
+          # Script de JS que corre con el contexto de GitHub disponible;
+          # usa la API de Octokit para crear el issue con datos dinámicos
+          # del commit y de la ejecución actual.
           script: |
             github.rest.issues.create({
               owner: context.repo.owner,
@@ -99,6 +156,10 @@ jobs:
               labels: ["ci-failure"]
             })
 
+  # Último job: solo corre si TODO lo anterior pasó, Y solo en push directo
+  # a main (no en PRs, para no desplegar código que aún no fue mergeado).
+  # "environment: production" lo ata al Environment configurado en GitHub
+  # (restringido a la rama main), que es donde vive el secret usado abajo.
   deploy:
     needs: [test, smoke-test, security-scan]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -106,4 +167,6 @@ jobs:
     environment: production
     steps:
       - name: Disparar despliegue en Render
+        # POST al Deploy Hook de Render: le dice "despliega ahora" sin
+        # exponer ninguna credencial en el código (vive como secret).
         run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"

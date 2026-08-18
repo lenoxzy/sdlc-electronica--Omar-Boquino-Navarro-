@@ -22,6 +22,7 @@ class SensorService:
             name=sensor_data.name,
             type_=sensor_data.type,
             location=sensor_data.location,
+            alert_threshold=sensor_data.alert_threshold,
         )
 
     def delete(self, sensor_id: int) -> bool:

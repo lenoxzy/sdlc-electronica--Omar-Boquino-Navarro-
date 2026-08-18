@@ -16,6 +16,7 @@ class ReadingModel:
     sensor_id: str
     value: float
     unit: str
+    alert_threshold: float | None = None
 
 
 # --- 2. EL PROTOCOLO (Inversión de Dependencias) ---
@@ -53,7 +54,7 @@ class SQLAlchemyReadingRepository:
         self.db.commit()
         self.db.refresh(new_reading)
 
-        return self._to_model(new_reading)
+        return self._to_model(new_reading, sensor.alert_threshold)
 
     def list_for_sensor(
         self,
@@ -68,7 +69,11 @@ class SQLAlchemyReadingRepository:
             stmt = stmt.where(Reading.created_at >= from_date)
         if to_date is not None:
             stmt = stmt.where(Reading.created_at <= to_date)
-        stmt = stmt.order_by(Reading.created_at).offset(offset).limit(limit)
+        stmt = (
+            stmt.order_by(Reading.created_at, Reading.id)
+            .offset(offset)
+            .limit(limit)
+        )
 
         readings = self.db.scalars(stmt).all()
         return [self._to_model(r) for r in readings]
@@ -100,10 +105,13 @@ class SQLAlchemyReadingRepository:
         return True
 
     @staticmethod
-    def _to_model(r: Reading) -> ReadingModel:
+    def _to_model(
+        r: Reading, alert_threshold: float | None = None
+    ) -> ReadingModel:
         return ReadingModel(
             id=int(r.id),
             sensor_id=str(r.sensor_id),
             value=float(r.value),
             unit=str(r.unit),
+            alert_threshold=alert_threshold,
         )
