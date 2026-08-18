@@ -5,6 +5,7 @@
 FROM python:3.12-slim AS builder
 WORKDIR /app
 
+
 # Creamos un entorno virtual aislado dentro de la imagen. Esto permite
 # copiar SOLO esa carpeta (/opt/venv) a la etapa final, en vez de arrastrar
 # también las herramientas de compilación que pip pudo haber usado.
@@ -24,6 +25,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 FROM python:3.12-slim
 WORKDIR /app
 
+# Actualiza paquetes del SO base para cerrar CVEs con parche disponible
+# (detectados por Trivy) antes de copiar el código de la app.
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 # Copiamos SOLO el entorno virtual ya armado desde la etapa builder —
 # no reinstalamos nada aquí, así evitamos duplicar herramientas de compilación.
 COPY --from=builder /opt/venv /opt/venv
