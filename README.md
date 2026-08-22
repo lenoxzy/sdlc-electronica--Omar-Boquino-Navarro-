@@ -41,3 +41,20 @@ API desplegada en Render: **https://sensorhub-api-axet.onrender.com**
 - Documentación interactiva (Swagger): https://sensorhub-api-axet.onrender.com/docs
 
 > Nota: el free tier de Render "duerme" tras 15 minutos sin tráfico — la primera petición puede tardar en responder.
+
+
+```mermaid
+flowchart TD
+    Client[Cliente HTTP] -->|POST /sensors/id/readings| Router[reading_router]
+    Router --> Service[ReadingService]
+    Service -->|validate_physics| Domain[app/domain/physics.py]
+    Service -->|repo.add| Repo[SQLAlchemyReadingRepository]
+    Repo --> DB[(PostgreSQL)]
+    Service -->|alert_service.evaluate| AlertSvc[AlertService]
+    AlertSvc -->|is_anomalous| Anomaly[AnomalyService]
+    AlertSvc -->|repo.add| AlertRepo[SQLAlchemyAlertRepository]
+    AlertRepo --> DB
+    AlertSvc -->|notify| Strategy[AlertStrategy]
+    Strategy --> Log[Logs estructurados JSON]
+```
+
