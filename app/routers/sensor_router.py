@@ -33,11 +33,11 @@ def create_sensor(
 
 
 @router.delete("/sensors/{id}", status_code=204)
-def delete_sensor(
+def deactivate_sensor(
     id: int, service: SensorService = Depends(get_sensor_service)  # noqa: B008
 ) -> None:
     try:
-        service.delete(id)
+        service.deactivate(id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from None
 

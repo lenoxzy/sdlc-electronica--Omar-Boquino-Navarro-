@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -12,4 +13,9 @@ class AlertOut(BaseModel):
     value: float
     threshold: float
     message: str
+    status: str
     created_at: datetime
+
+
+class AlertStatusUpdate(BaseModel):
+    status: Literal["open", "acknowledged", "resolved"]

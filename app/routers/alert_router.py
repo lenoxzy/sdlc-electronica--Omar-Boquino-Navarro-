@@ -1,11 +1,11 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.repositories.alert_repo import SQLAlchemyAlertRepository
-from app.schemas.alert_schema import AlertOut
+from app.schemas.alert_schema import AlertOut, AlertStatusUpdate
 
 router = APIRouter()
 
@@ -33,3 +33,18 @@ def list_alerts_for_sensor(
     repo: SQLAlchemyAlertRepository = Depends(get_alert_repo),  # noqa: B008
 ) -> Any:
     return repo.list_for_sensor(id)
+
+
+@router.patch("/alerts/{id}/status", response_model=AlertOut, status_code=200)
+def update_alert_status(
+    id: int,
+    patch: AlertStatusUpdate,
+    repo: SQLAlchemyAlertRepository = Depends(get_alert_repo),  # noqa: B008
+) -> Any:
+    try:
+        updated = repo.update_status(id, patch.status)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from None
+    if not updated:
+        raise HTTPException(status_code=404, detail="Alerta no encontrada")
+    return updated

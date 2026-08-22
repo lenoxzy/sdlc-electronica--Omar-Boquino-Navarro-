@@ -17,5 +17,6 @@ class SensorOut(BaseModel):
     type: str
     location: str | None = None
     alert_threshold: float | None = None
+    is_active: bool
 
     

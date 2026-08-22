@@ -25,8 +25,8 @@ class SensorService:
             alert_threshold=sensor_data.alert_threshold,
         )
 
-    def delete(self, sensor_id: int) -> bool:
-        success = self.repo.delete(sensor_id)
+    def deactivate(self, sensor_id: int) -> bool:
+        success = self.repo.deactivate(sensor_id)
         if not success:
             raise ValueError("Sensor no encontrado")
         return success
