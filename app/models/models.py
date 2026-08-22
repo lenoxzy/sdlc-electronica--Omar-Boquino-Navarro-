@@ -14,7 +14,7 @@ class Sensor(Base):
     name: Mapped[str] = mapped_column(String, index=True)
     type: Mapped[str] = mapped_column(String, nullable=False)
     location: Mapped[str | None] = mapped_column(String, nullable=True)
-
+    is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
  # Relación con las lecturas (Un sensor tiene muchas lecturas)
     readings: Mapped[list["Reading"]] = relationship(
         "Reading",
@@ -58,6 +58,7 @@ class Alert(Base):
     reading_id: Mapped[int] = mapped_column(ForeignKey("reading.id"))
     value: Mapped[float] = mapped_column(Float, nullable=False)
     threshold: Mapped[float] = mapped_column(Float, nullable=False)
+    status: Mapped[str] = mapped_column(String, default="open", nullable=False)
     message: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime,

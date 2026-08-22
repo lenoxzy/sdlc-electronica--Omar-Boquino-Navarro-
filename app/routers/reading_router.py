@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.db import get_db
+from app.domain.stats import calculate_stats
 from app.repositories.alert_repo import SQLAlchemyAlertRepository
 from app.repositories.reading_repo import SQLAlchemyReadingRepository
 from app.schemas.reading_schema import ReadingCreate, ReadingOut, ReadingUpdate
@@ -44,6 +45,24 @@ def list_readings(
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e)) from None
 
+
+@router.get("/sensors/{id}/stats", status_code=200)
+def get_sensor_stats(
+    id: int,
+    service: ReadingService = Depends(get_service),  # noqa: B008
+) -> dict[str, float]:
+    readings = service.list_for_sensor(sensor_id=str(id), limit=10000, offset=0)
+    if not readings:
+        raise HTTPException(
+            status_code=422, detail="El sensor no tiene lecturas registradas"
+        )
+    values = [r.value for r in readings]
+    stats = calculate_stats(values)
+    return {
+        "minimum": stats.minimum,
+        "maximum": stats.maximum,
+        "average": stats.average,
+    }
 
 @router.post("/sensors/{id}/readings", response_model=ReadingOut, status_code=201)
 def create_reading(

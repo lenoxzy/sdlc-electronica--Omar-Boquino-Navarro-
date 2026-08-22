@@ -26,6 +26,7 @@ class FakeAlertRepository:
             value=value,
             threshold=threshold,
             message=message,
+            status="open",
             created_at=datetime.now(),
         )
         self.alerts.append(alert)

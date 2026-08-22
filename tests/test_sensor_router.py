@@ -48,7 +48,16 @@ def test_delete_sensor_success(client: TestClient) -> None:
     sensor_id = created.json()["id"]
     response = client.delete(f"/sensors/{sensor_id}")
     assert response.status_code == 204
-    assert client.get(f"/sensors/{sensor_id}").status_code == 404
+
+    # Soft-delete: el sensor ya no aparece en el listado activo...
+    listed = client.get("/sensors").json()
+    assert not any(s["id"] == sensor_id for s in listed)
+
+    # ...pero el registro sigue existiendo y consultable individualmente,
+    # marcado como inactivo.
+    detail = client.get(f"/sensors/{sensor_id}")
+    assert detail.status_code == 200
+    assert detail.json()["is_active"] is False
 
 
 def test_delete_sensor_not_found(client: TestClient) -> None:

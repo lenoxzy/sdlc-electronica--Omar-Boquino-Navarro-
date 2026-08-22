@@ -17,7 +17,7 @@ class SensorRepository(Protocol):
     ) -> Sensor: ...
     def get_all(self, skip: int = 0, limit: int = 100) -> Sequence[Sensor]: ...
     def get_by_id(self, sensor_id: int) -> Sensor | None: ...
-    def delete(self, sensor_id: int) -> bool: ...
+    def deactivate(self, sensor_id: int) -> bool: ...
 
 
 class SQLAlchemySensorRepository:
@@ -43,16 +43,21 @@ class SQLAlchemySensorRepository:
         return sensor
 
     def get_all(self, skip: int = 0, limit: int = 100) -> Sequence[Sensor]:
-        stmt = select(Sensor).offset(skip).limit(limit)
+        stmt = (
+            select(Sensor)
+            .where(Sensor.is_active.is_(True))
+            .offset(skip)
+            .limit(limit)
+        )
         return self.db.scalars(stmt).all()
 
     def get_by_id(self, sensor_id: int) -> Sensor | None:
         return self.db.get(Sensor, sensor_id)
 
-    def delete(self, sensor_id: int) -> bool:
+    def deactivate(self, sensor_id: int) -> bool:
         sensor = self.db.get(Sensor, sensor_id)
         if not sensor:
             return False
-        self.db.delete(sensor)
+        sensor.is_active = False
         self.db.commit()
         return True
